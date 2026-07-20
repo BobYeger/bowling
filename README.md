@@ -1,6 +1,19 @@
-# 🎳 כדור באולינג בורח! (Bowling Escape)
+# 🎳⚽ משחקי הטוש (The Marker Games)
 
-A Three.js game designed by a kid, drawn with markers, and brought to life.
+Three.js games designed by a kid, drawn with markers, and brought to life.
+
+**Game 1 — כדור באולינג בורח (Bowling Escape)** — open `/` (index.html)
+**Game 2 — פנדלים בנגיחה (Header Penalties)** — open `/pendel.html`
+
+## ⚽ פנדלים בנגיחה (Header Penalties)
+
+There's a goal, and inside it a goalkeeper — actually two, one standing on the
+other's head, exactly as drawn. The ball comes **lobbed from behind you**, over
+your head. Aim the red reticle with the arrows, press Space as the ball arrives
+to jump and head it. Every goal is one point, and the keeper tower gets sharper
+with every goal you score.
+
+## 🎳 כדור באולינג בורח (Bowling Escape)
 
 A bowling ball flees from monsters down an endless paper lane. Hit the pins —
 it's **always a strike** — and score 10 points. The twist: **the world only
