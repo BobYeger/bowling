@@ -3,97 +3,361 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>כדור באולינג בורח!</title>
+  <meta name="theme-color" content="#f8f5ec" />
+  <meta name="description" content="משחקי הטוש — בוחרים משחק ומתחילים לשחק." />
+  <title>משחקי הטוש — בוחרים ומשחקים</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f8f5ec; }
-    #app { position: fixed; inset: 0; }
-    canvas { display: block; }
+    :root {
+      color-scheme: light;
+      font-family: "Comic Sans MS", "Chalkboard SE", "Arial Rounded MT Bold", Arial, sans-serif;
+      background: #f8f5ec;
+      color: #22213a;
+    }
 
-    .hud {
+    * { box-sizing: border-box; }
+
+    html { min-height: 100%; }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 12% 13%, rgba(232,72,28,.14) 0 4px, transparent 5px),
+        radial-gradient(circle at 88% 27%, rgba(43,75,215,.13) 0 5px, transparent 6px),
+        radial-gradient(circle at 20% 82%, rgba(43,122,31,.13) 0 4px, transparent 5px),
+        linear-gradient(90deg, rgba(43,75,215,.055) 1px, transparent 1px),
+        linear-gradient(rgba(43,75,215,.055) 1px, transparent 1px),
+        #f8f5ec;
+      background-size: auto, auto, auto, 28px 28px, 28px 28px, auto;
+    }
+
+    body::before,
+    body::after {
+      content: "";
       position: fixed;
-      font-family: "Comic Sans MS", "Chalkboard SE", Arial, sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
-      direction: rtl;
-    }
-
-    #score {
-      top: 16px; right: 20px;
-      font-size: 34px; font-weight: 900; color: #2b4bd7;
-      background: #f8f5ec;
-      padding: 6px 18px; border-radius: 14px 18px 15px 17px;
-      border: 3px solid #2b4bd7;
-      transform: rotate(-1deg);
-    }
-
-    #ammo {
-      top: 16px; left: 20px;
-      font-size: 30px; font-weight: 900; color: #b93007;
-      background: #f8f5ec;
-      padding: 6px 16px; border-radius: 16px 14px 17px 15px;
-      border: 3px solid #b93007;
-      transform: rotate(1deg);
-      direction: ltr;
-    }
-
-    #strike {
-      top: 22%; left: 50%; transform: translateX(-50%) scale(0) rotate(-3deg);
-      font-size: 72px; font-weight: 900; color: #2b4bd7;
-      text-shadow: 0 3px 0 #f8f5ec, 0 6px 12px rgba(43,75,215,.25);
+      z-index: -1;
+      width: 220px;
+      height: 220px;
+      border: 9px solid;
+      border-radius: 44% 56% 48% 52%;
+      opacity: .08;
       pointer-events: none;
-      transition: transform .15s ease-out;
     }
-    #strike.show { transform: translateX(-50%) scale(1) rotate(-3deg); }
 
-    .overlay {
-      position: fixed; inset: 0;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: rgba(248, 245, 236, .88);
-      font-family: "Comic Sans MS", "Chalkboard SE", Arial, sans-serif;
-      direction: rtl; text-align: center;
-      color: #2b4bd7; gap: 14px; z-index: 10;
+    body::before {
+      top: -90px;
+      right: -70px;
+      color: #2b4bd7;
+      transform: rotate(22deg);
     }
-    .overlay h1 { font-size: 52px; margin: 0; transform: rotate(-1.5deg); }
-    .overlay p  { font-size: 23px; margin: 4px 0; }
-    .overlay .big-score { font-size: 40px; font-weight: 900; color: #e8481c; transform: rotate(1deg); }
-    .overlay button {
-      font-size: 30px; font-weight: 900; font-family: inherit;
-      padding: 12px 42px; border-radius: 42px 38px 45px 36px;
-      border: 4px solid #b93007;
-      background: #e8481c; color: #f8f5ec; cursor: pointer;
-      box-shadow: 0 6px 0 rgba(185,48,7,.35);
+
+    body::after {
+      bottom: -105px;
+      left: -60px;
+      color: #e8481c;
+      transform: rotate(-28deg);
+    }
+
+    .launcher {
+      width: min(1080px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 42px 0 32px;
+    }
+
+    .hero {
+      max-width: 760px;
+      margin: 0 auto 30px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      margin: 0 0 6px;
+      padding: 6px 14px;
+      color: #b93007;
+      background: #fff6c7;
+      border: 3px solid #b93007;
+      border-radius: 18px 14px 20px 13px;
+      font-size: clamp(14px, 2vw, 18px);
+      font-weight: 900;
+      transform: rotate(1deg);
+    }
+
+    h1 {
+      margin: 7px 0 4px;
+      color: #2b4bd7;
+      font-size: clamp(50px, 9vw, 92px);
+      line-height: .95;
+      letter-spacing: -3px;
+      text-shadow: 3px 4px 0 #cfd5ff;
       transform: rotate(-1deg);
     }
-    .overlay button:active { transform: translateY(4px) rotate(-1deg); box-shadow: none; }
-    .hidden { display: none !important; }
-    .tip { font-size: 19px; opacity: .9; }
+
+    h1 span { color: #e8481c; }
+
+    .subtitle {
+      margin: 18px auto 0;
+      color: #3b3850;
+      font-size: clamp(20px, 3vw, 27px);
+      font-weight: 800;
+    }
+
+    .games {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 28px;
+      align-items: stretch;
+    }
+
+    .game-card {
+      --ink: #2b4bd7;
+      --soft: #eef0ff;
+      position: relative;
+      display: flex;
+      min-height: 530px;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 24px;
+      color: #25233a;
+      background: rgba(255,255,255,.84);
+      border: 5px solid var(--ink);
+      border-radius: 28px 21px 31px 23px;
+      box-shadow: 9px 10px 0 color-mix(in srgb, var(--ink) 22%, transparent);
+      text-decoration: none;
+      transform: rotate(-.6deg);
+      transition: transform .16s ease, box-shadow .16s ease;
+      isolation: isolate;
+    }
+
+    .game-card::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      opacity: .6;
+      background: repeating-linear-gradient(
+        -12deg,
+        transparent 0 25px,
+        color-mix(in srgb, var(--ink) 7%, transparent) 26px 28px
+      );
+    }
+
+    .game-card:nth-child(2) { transform: rotate(.7deg); }
+
+    .game-card:hover,
+    .game-card:focus-visible {
+      outline: none;
+      transform: translateY(-7px) rotate(0);
+      box-shadow: 12px 16px 0 color-mix(in srgb, var(--ink) 24%, transparent);
+    }
+
+    .game-card:focus-visible { outline: 5px dashed #22213a; outline-offset: 5px; }
+
+    .game-card.penalties {
+      --ink: #2b7a1f;
+      --soft: #eef8e9;
+    }
+
+    .tape {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      width: 92px;
+      height: 24px;
+      background: rgba(255,225,110,.74);
+      transform: translateX(-50%) rotate(-2deg);
+      clip-path: polygon(4% 7%, 97% 0, 94% 93%, 2% 100%);
+    }
+
+    .art {
+      position: relative;
+      height: 250px;
+      margin: 13px 0 12px;
+      overflow: hidden;
+      border-radius: 23px 18px 25px 20px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.8), transparent),
+        var(--soft);
+      border: 3px dashed var(--ink);
+    }
+
+    .drawing {
+      display: block;
+      position: absolute;
+      inset: 12px;
+      width: calc(100% - 24px);
+      height: calc(100% - 24px);
+      object-fit: contain;
+      filter: drop-shadow(4px 6px 2px rgba(0,0,0,.15));
+      transform: rotate(-1deg);
+      transition: transform .16s ease;
+    }
+
+    .penalties .drawing { transform: rotate(1deg); }
+
+    .game-card:hover .drawing,
+    .game-card:focus-visible .drawing { transform: rotate(0) scale(1.025); }
+
+    .drawing-label {
+      position: absolute;
+      right: 10px;
+      bottom: 9px;
+      padding: 4px 9px;
+      color: var(--ink);
+      background: rgba(255,255,255,.92);
+      border: 2px solid var(--ink);
+      border-radius: 11px 9px 12px 8px;
+      font-size: 13px;
+      font-weight: 900;
+      transform: rotate(-2deg);
+    }
+
+    .badge {
+      align-self: flex-start;
+      margin: 0;
+      padding: 5px 11px;
+      color: var(--ink);
+      background: var(--soft);
+      border: 2px solid var(--ink);
+      border-radius: 13px 10px 14px 11px;
+      font-size: 15px;
+      font-weight: 900;
+      transform: rotate(-1deg);
+    }
+
+    h2 {
+      margin: 14px 0 8px;
+      color: var(--ink);
+      font-size: clamp(29px, 4vw, 40px);
+      line-height: 1.05;
+    }
+
+    .description {
+      margin: 0 0 18px;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: auto 0 18px;
+    }
+
+    .controls span {
+      padding: 5px 10px;
+      color: #444058;
+      background: #fff;
+      border: 2px solid #b8b5c4;
+      border-radius: 11px 9px 12px 8px;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .play {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 17px;
+      color: #fff;
+      background: var(--ink);
+      border-radius: 18px 14px 20px 13px;
+      font-size: 22px;
+      font-weight: 900;
+      box-shadow: 0 5px 0 color-mix(in srgb, var(--ink) 48%, #111);
+    }
+
+    .play::after {
+      content: "←";
+      font-size: 31px;
+      line-height: .7;
+      transition: transform .16s ease;
+    }
+
+    .game-card:hover .play::after,
+    .game-card:focus-visible .play::after { transform: translateX(-5px); }
+
+    footer {
+      margin-top: 26px;
+      color: #68647a;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 720px) {
+      .launcher { width: min(100% - 22px, 520px); padding-top: 24px; }
+      .hero { margin-bottom: 22px; }
+      .games { grid-template-columns: 1fr; gap: 22px; }
+      .game-card, .game-card:nth-child(2) { min-height: 490px; transform: none; }
+      .art { height: 235px; }
+      h1 { letter-spacing: -2px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .game-card, .drawing, .play::after { transition: none; }
+    }
   </style>
 </head>
 <body>
-  <div id="app"></div>
+  <main class="launcher">
+    <header class="hero">
+      <p class="eyebrow">🎨 צוירו בטושים. קמו לחיים.</p>
+      <h1>משחקי <span>הטוש</span></h1>
+      <p class="subtitle">איזה משחק משחקים היום?</p>
+    </header>
 
-  <div id="score" class="hud">נקודות: 0</div>
-  <div id="ammo" class="hud">🔴 6</div>
-  <div id="strike" class="hud">סטרייק! ‎+10</div>
+    <section class="games" aria-label="בחירת משחק">
+      <a class="game-card bowling" href="/bowling.html">
+        <span class="tape" aria-hidden="true"></span>
+        <div class="art">
+          <img
+            class="drawing"
+            src="/images/bowling-original.jpg"
+            alt="הציור המקורי של מסלול הבאולינג, הפינים והמפלצות"
+            width="1200"
+            height="1600"
+          />
+          <span class="drawing-label">🖍️ הציור המקורי</span>
+        </div>
+        <p class="badge">בריחה · פעולה · סטרייקים</p>
+        <h2>כדור באולינג בורח!</h2>
+        <p class="description">ברחו מהמפלצות, הפילו פינים ועשו סטרייק בכל פגיעה.</p>
+        <div class="controls" aria-label="מקשים">
+          <span>חצים / WASD</span>
+          <span>רווח לירי</span>
+        </div>
+        <span class="play">למשחק הבאולינג</span>
+      </a>
 
-  <div id="intro" class="overlay">
-    <h1>🎳 כדור באולינג בורח!</h1>
-    <p>המפלצות רודפות אחרי הכדור… תברחו!</p>
-    <p>פוגעים בפינים = <b>סטרייק!</b> תמיד. ‎+10 נקודות 🎉</p>
-    <p class="tip">⭐ סוד: המפלצות זזות <b>רק כשהכדור זז</b>. עומדים במקום — הכל קופא!</p>
-    <p class="tip">🔴 לוחצים <b>רווח</b> כדי לירות כדורים במפלצות! כל סטרייק נותן עוד 3 כדורים</p>
-    <p class="tip">🖐️ זהירות: לכל מפלצת יש משהו ארוך שמנסה לתפוס — ואם נוגעים במפלצת, נתפסים!</p>
-    <p class="tip">זזים עם החצים או WASD</p>
-    <button id="startBtn">שחקו!</button>
-    <p class="tip other-game">⚽ חדש! <a href="/pendel.html" style="color:#2b7a1f;font-weight:900">פנדלים בנגיחה</a></p>
-  </div>
+      <a class="game-card penalties" href="/pendel.html">
+        <span class="tape" aria-hidden="true"></span>
+        <div class="art">
+          <img
+            class="drawing"
+            src="/images/penalties-original.jpg"
+            alt="הציור המקורי של השער ומגדל השוערים"
+            width="899"
+            height="1599"
+          />
+          <span class="drawing-label">🖍️ הציור המקורי</span>
+        </div>
+        <p class="badge">כדורגל · תזמון · שערים</p>
+        <h2>פנדלים בנגיחה!</h2>
+        <p class="description">כוונו את הנגיחה, קפצו בזמן והכניעו את מגדל השוערים.</p>
+        <div class="controls" aria-label="מקשים">
+          <span>חצים לכיוון</span>
+          <span>רווח לנגיחה</span>
+        </div>
+        <span class="play">למשחק הפנדלים</span>
+      </a>
+    </section>
 
-  <div id="gameover" class="overlay hidden">
-    <h1>😱 המפלצת תפסה את הכדור!</h1>
-    <p class="big-score" id="finalScore"></p>
-    <button id="restartBtn">עוד פעם!</button>
-  </div>
-
-  <script type="module" src="/src/main.js"></script>
+    <footer>שני משחקים מקוריים שנולדו מציורים על נייר ✨</footer>
+  </main>
 </body>
 </html>

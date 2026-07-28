@@ -2,7 +2,8 @@
 
 Three.js games designed by a kid, drawn with markers, and brought to life.
 
-**Game 1 — כדור באולינג בורח (Bowling Escape)** — open `/` (index.html)
+**Game chooser** — open `/` (index.html)
+**Game 1 — כדור באולינג בורח (Bowling Escape)** — open `/bowling.html`
 **Game 2 — פנדלים בנגיחה (Header Penalties)** — open `/pendel.html`
 
 ## ⚽ פנדלים בנגיחה (Header Penalties)
