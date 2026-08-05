@@ -16,6 +16,12 @@ const MARKER_ORANGE_DARK = 0xa9560a;
 const SPOKE_RED = 0x9c3a24;
 const SPOKE_RED_DARK = 0x6e2415;
 const LINE_BROWN = 0xa08266;
+const MARKER_GREY = 0x9aa0a6;
+const MARKER_GREY_DARK = 0x686e73;
+const MARKER_TEAL = 0x0f8f6d;
+const MARKER_TEAL_DARK = 0x0a5f49;
+const ALIEN_GREEN = 0x7fae3e;
+const ALIEN_GREEN_DARK = 0x567a24;
 
 // ---------- Constants ----------
 const LANE_HALF = 13;
@@ -25,7 +31,7 @@ const BALL_ACCEL = 55;
 const BALL_DRAG = 2.4;
 const BALL_DRAG_STOP = 7.0;    // stronger brake with no input — stopping is the panic button
 const BREAK_SPEED = 14;        // faster than this, the ball rips free from a grabber's grip
-const GRAB_RADIUS = 1.05;      // grabber tip touching distance
+const GRAB_RADIUS = 0.95;      // grabber tip touching distance (each tip adds its own size on top)
 const STRIKE_DIST = 2.6;
 const RACKS_AHEAD = 3;
 const MAX_MONSTERS = 14;
@@ -256,34 +262,112 @@ function makeEye(size, outlineColor) {
   return eye;
 }
 
-// ---------- Grabbers: long bendy appendages made of sphere chains ----------
+// ---------- Grabbers: long bendy appendages drawn as smooth continuous tubes ----------
 // Each monster grabs with a different body part — arms, a tongue, a tail,
 // a stretching spoke, an uncoiling spiral, or a whole snake head.
+// The tube vertices are recomputed each frame along a bezier, into fixed buffers.
+const TUBE_RINGS = 14;
+const TUBE_SIDES = 8;
+const _pts = Array.from({ length: TUBE_RINGS }, () => new THREE.Vector3());
+const _tan = new THREE.Vector3(), _bin = new THREE.Vector3(), _nrmPT = new THREE.Vector3(), _dir = new THREE.Vector3();
+
+function makeTubeGeometry() {
+  const geo = new THREE.BufferGeometry();
+  const vertCount = TUBE_RINGS * TUBE_SIDES;
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertCount * 3), 3));
+  geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(vertCount * 3), 3));
+  const idx = [];
+  for (let i = 0; i < TUBE_RINGS - 1; i++) {
+    for (let j = 0; j < TUBE_SIDES; j++) {
+      const a = i * TUBE_SIDES + j;
+      const b = i * TUBE_SIDES + ((j + 1) % TUBE_SIDES);
+      const c = (i + 1) * TUBE_SIDES + j;
+      const d = (i + 1) * TUBE_SIDES + ((j + 1) % TUBE_SIDES);
+      idx.push(a, b, c, b, d, c); // outward-facing winding, agrees with the ring normals
+    }
+  }
+  geo.setIndex(idx);
+  return geo;
+}
+
+// write ring vertices along the sampled curve (_pts) with tapering radius
+function fillTube(geo, r0, r1) {
+  const pos = geo.attributes.position.array;
+  const nor = geo.attributes.normal.array;
+  _nrmPT.set(0, 1, 0);
+  let k = 0;
+  for (let i = 0; i < TUBE_RINGS; i++) {
+    const p = _pts[i];
+    _tan.subVectors(_pts[Math.min(TUBE_RINGS - 1, i + 1)], _pts[Math.max(0, i - 1)]);
+    if (_tan.lengthSq() < 1e-10) _tan.set(0, 0, 1);
+    else _tan.normalize();
+    // parallel transport: keep the ring frame from twisting
+    _nrmPT.addScaledVector(_tan, -_nrmPT.dot(_tan));
+    if (_nrmPT.lengthSq() < 1e-6) _nrmPT.set(1, 0, 0).addScaledVector(_tan, -_tan.x);
+    _nrmPT.normalize();
+    _bin.crossVectors(_tan, _nrmPT);
+    const r = r0 + (r1 - r0) * (i / (TUBE_RINGS - 1));
+    for (let j = 0; j < TUBE_SIDES; j++) {
+      const a = (j / TUBE_SIDES) * Math.PI * 2;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const nx = _nrmPT.x * ca + _bin.x * sa;
+      const ny = _nrmPT.y * ca + _bin.y * sa;
+      const nz = _nrmPT.z * ca + _bin.z * sa;
+      pos[k] = p.x + nx * r; pos[k + 1] = p.y + ny * r; pos[k + 2] = p.z + nz * r;
+      nor[k] = nx; nor[k + 1] = ny; nor[k + 2] = nz;
+      k += 3;
+    }
+  }
+  geo.attributes.position.needsUpdate = true;
+  geo.attributes.normal.needsUpdate = true;
+}
+
 function makeGrabber(m, opts) {
   const group = new THREE.Group();
   group.position.set(...opts.anchor);
   m.add(group);
 
   const mat = toon(opts.color);
+
+  // invisible locators along the body — spikes and legs ride on these
   const balls = [];
   const n = opts.segments;
   for (let i = 0; i < n; i++) {
     const r = THREE.MathUtils.lerp(opts.baseR, opts.tipR, i / (n - 1));
-    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), mat);
-    outline(s, opts.dark, 1.16);
-    group.add(s);
-    balls.push(s);
+    const loc = new THREE.Group();
+    group.add(loc);
+    balls.push(loc);
     if (opts.spikeEvery && i % opts.spikeEvery === 1) {
       const spike = new THREE.Mesh(new THREE.ConeGeometry(r * 0.55, r * 1.7, 6), toon(opts.spikeColor));
       spike.position.y = r * 1.1;
-      s.add(spike);
+      loc.add(spike);
     }
   }
+
+  // one smooth tube + a back-facing shell for the marker outline
+  const tube = new THREE.Mesh(makeTubeGeometry(), mat);
+  tube.frustumCulled = false;
+  group.add(tube);
+  const shell = new THREE.Mesh(makeTubeGeometry(), new THREE.MeshBasicMaterial({ color: opts.dark, side: THREE.BackSide }));
+  shell.frustumCulled = false;
+  group.add(shell);
+
+  // rounded ends so the tube never looks chopped
+  const baseCap = new THREE.Mesh(new THREE.SphereGeometry(opts.baseR, 10, 8), mat);
+  outline(baseCap, opts.dark, 1.2);
+  group.add(baseCap);
+  const tipCap = new THREE.Mesh(new THREE.SphereGeometry(opts.tipR, 10, 8), mat);
+  outline(tipCap, opts.dark, 1.22);
+  group.add(tipCap);
+
   const tip = opts.buildTip ? opts.buildTip() : null;
   if (tip) group.add(tip);
 
   const grabber = {
-    group, balls, tip,
+    group, balls, tip, tube, shell, tipCap,
+    baseR: opts.baseR,
+    tipR: opts.tipR,
+    grabR: opts.grabR ?? opts.tipR,   // effective tip size for catching; big heads override
     cur: new THREE.Vector3(0, 0.4, 0.8),
     reach: opts.reach,
     closeSpeed: opts.closeSpeed,
@@ -293,30 +377,56 @@ function makeGrabber(m, opts) {
     cooldown: 0,
     aim: new THREE.Vector3(),   // heavily smoothed world-space aim point — slow to turn, easy to read
     aimInit: false,
+    aimOffset: opts.aimOffset ? new THREE.Vector3(...opts.aimOffset) : null, // keeps paired arms apart
     tipWorld: new THREE.Vector3(),
   };
   (m.userData.grabbers ??= []).push(grabber);
   return grabber;
 }
 
-const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _p = new THREE.Vector3(), _mid = new THREE.Vector3();
+const _p = new THREE.Vector3(), _mid = new THREE.Vector3();
 function layoutGrabber(gr) {
   const end = gr.cur;
   _mid.copy(end).multiplyScalar(0.5);
   _mid.y += 0.45 + Math.sin(gr.phase * 1.7) * 0.4 * gr.wiggle;
   _mid.x += Math.sin(gr.phase) * 0.5 * gr.wiggle;
+
+  // sample the bezier (start is the local origin) and skin both tubes over it
+  for (let i = 0; i < TUBE_RINGS; i++) {
+    const t = i / (TUBE_RINGS - 1);
+    const w = 2 * (1 - t) * t;
+    _pts[i].set(
+      _mid.x * w + end.x * t * t,
+      _mid.y * w + end.y * t * t,
+      _mid.z * w + end.z * t * t
+    );
+  }
+  fillTube(gr.tube.geometry, gr.baseR, gr.tipR);
+  fillTube(gr.shell.geometry, gr.baseR * 1.25 + 0.025, gr.tipR * 1.25 + 0.025);
+
+  // locators ride the same curve (spikes, legs)
   const n = gr.balls.length;
   for (let i = 0; i < n; i++) {
     const t = (i + 1) / n;
-    _a.copy(_mid).multiplyScalar(t);                 // lerp(origin, mid, t)
-    _b.lerpVectors(_mid, end, t);
-    _p.lerpVectors(_a, _b, t);
-    gr.balls[i].position.copy(_p);
+    const w = 2 * (1 - t) * t;
+    gr.balls[i].position.set(
+      _mid.x * w + end.x * t * t,
+      _mid.y * w + end.y * t * t,
+      _mid.z * w + end.z * t * t
+    );
   }
+
+  gr.tipCap.position.copy(end);
   if (gr.tip) {
     gr.tip.position.copy(end);
-    _a.copy(end).sub(gr.balls[n - 2].position).normalize();
-    gr.tip.quaternion.setFromUnitVectors(Z_AXIS, _a);
+    _dir.copy(end).sub(_pts[TUBE_RINGS - 2]);
+    if (gr.tip.userData.upright) {
+      // heads stay upright like the drawing — only turn to face where the body points
+      gr.tip.position.y += gr.tip.userData.lift || 0;
+      if (_dir.x * _dir.x + _dir.z * _dir.z > 1e-10) gr.tip.rotation.set(0, Math.atan2(_dir.x, _dir.z), 0);
+    } else if (_dir.lengthSq() > 1e-10) {
+      gr.tip.quaternion.setFromUnitVectors(Z_AXIS, _dir.normalize());
+    }
   }
 }
 
@@ -339,6 +449,7 @@ function updateGrabbers(m, dist, sdt, aimWorld, cinematic = false) {
       }
       gr.aim.lerp(aimWorld, 1 - Math.exp(-1.5 * sdt)); // the aim itself drifts slowly
       desired = gr.group.worldToLocal(gr.aim.clone());
+      if (gr.aimOffset) desired.add(gr.aimOffset);
       if (desired.length() > gr.reach) desired.setLength(gr.reach);
     } else {
       desired = gr.rest(gr.phase);
@@ -350,7 +461,9 @@ function updateGrabbers(m, dist, sdt, aimWorld, cinematic = false) {
     if (_p.length() <= step) gr.cur.copy(desired);
     else gr.cur.addScaledVector(_p.normalize(), step);
     layoutGrabber(gr);
-    gr.tipWorld.copy(gr.cur).applyMatrix4(gr.group.matrixWorld);
+    gr.tipWorld.copy(gr.cur);
+    if (gr.tip && gr.tip.userData.upright) gr.tipWorld.y += gr.tip.userData.lift || 0; // catch where the head IS
+    gr.tipWorld.applyMatrix4(gr.group.matrixWorld);
   }
 }
 
@@ -384,6 +497,7 @@ function makePurpleMonster() {
       color: MARKER_PURPLE, dark: MARKER_PURPLE_DARK,
       segments: 8, baseR: 0.16, tipR: 0.11,
       reach: 4.5, closeSpeed: 4.5,
+      aimOffset: [side * 0.5, 0, 0],
       rest: (t) => new THREE.Vector3(side * (0.9 + Math.sin(t * 0.9) * 0.35), -1.3 + Math.sin(t * 1.3) * 0.5, 0.5),
       buildTip: () => {
         const ring = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.09, 8, 14), toon(MARKER_PURPLE));
@@ -509,7 +623,7 @@ function makeSnake() {
   makeGrabber(m, {
     anchor: [0, 0.4, 0],
     color: MARKER_GREEN, dark: MARKER_GREEN_DARK,
-    segments: 13, baseR: 0.34, tipR: 0.21,
+    segments: 13, baseR: 0.34, tipR: 0.21, grabR: 0.46,
     reach: 5.5, closeSpeed: 4.5, wiggle: 1.4,
     spikeEvery: 2, spikeColor: MARKER_PURPLE,
     rest: (t) => new THREE.Vector3(Math.sin(t * 0.7) * 0.9, 2.1 + Math.sin(t * 1.1) * 0.5, 1.1),
@@ -691,7 +805,211 @@ function makeScribbleMonster() {
   return m;
 }
 
-const MONSTER_MAKERS = [makePurpleMonster, makeGreenMonster, makeYellowWheel, makeSnake, makeDino, makeSnail, makeScribbleMonster];
+// ---------- Monsters (drawing #3: the whiteboard) ----------
+function makeAsterisk(size, thickness, color) {
+  const star = new THREE.Group();
+  for (let i = 0; i < 3; i++) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(thickness, size, thickness), toon(color));
+    bar.rotation.z = (i * Math.PI) / 3;
+    star.add(bar);
+  }
+  return star;
+}
+
+// tall pole with a grey head and a red asterisk — it fishes for you from way up high
+function makeLollipop() {
+  const m = new THREE.Group();
+
+  [-0.15, 0.15].forEach((x) => {
+    const line = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 3.6, 8), toon(MARKER_TEAL));
+    line.position.set(x, 1.8, 0);
+    m.add(line);
+  });
+  const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 3.6, 8), toon(MARKER_GREY));
+  inner.position.set(0, 1.8, -0.05);
+  m.add(inner);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 12), toon(MARKER_GREY));
+  head.position.y = 4.0;
+  outline(head, MARKER_GREY_DARK, 1.08);
+  m.add(head);
+  const star = makeAsterisk(0.62, 0.07, SPOKE_RED);
+  star.position.set(0, 4.0, 0.5);
+  m.add(star);
+
+  // a teal fishing-line arm dangles from the top
+  makeGrabber(m, {
+    anchor: [0.4, 3.6, 0.2],
+    color: MARKER_TEAL, dark: MARKER_TEAL_DARK,
+    segments: 10, baseR: 0.12, tipR: 0.09,
+    reach: 5, closeSpeed: 4.8, wiggle: 1.2,
+    rest: (t) => new THREE.Vector3(Math.sin(t * 0.8) * 0.7, -2.3 + Math.sin(t * 1.2) * 0.4, 0.5),
+    buildTip: () => {
+      const tipStar = makeAsterisk(0.34, 0.05, SPOKE_RED);
+      const hub = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), toon(MARKER_GREY));
+      tipStar.add(hub);
+      return tipStar;
+    },
+  });
+
+  m.userData.kind = 'lollipop';
+  m.userData.holdHeight = 4.5;
+  return m;
+}
+
+// the peanut-headed grey monster: no arms — its whole long body attacks,
+// tipped with the big peanut head (dot eyes, grey teeth, notched top)
+function makePeanutHead() {
+  const head = new THREE.Group();
+  // one continuous curved band, like the drawing: a thick open curve
+  // with a rounded notch at the top and rounded ends
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.26, 12, 28, 4.6), toon(MARKER_GREY));
+  band.rotation.z = 2.24; // places the open notch at the top, slightly right
+  band.scale.set(1, 1.18, 1);
+  outline(band, MARKER_GREY_DARK, 1.09);
+  head.add(band);
+  // rounded ends of the band, flanking the notch — children of the band so they
+  // inherit its exact rotate+stretch transform and land precisely on the open ends
+  [0, 4.6].forEach((a) => {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), toon(MARKER_GREY));
+    cap.position.set(Math.cos(a) * 0.42, Math.sin(a) * 0.42, 0);
+    outline(cap, MARKER_GREY_DARK, 1.12);
+    band.add(cap);
+  });
+  // two tiny dot eyes on the upper-left, like the drawing
+  [[-0.3, 0.3], [-0.08, 0.4]].forEach(([x, y]) => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), flat(0x14141c));
+    eye.position.set(x, y, 0.26);
+    head.add(eye);
+  });
+  // the cluster of grey scribble teeth mid-face
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 3; col++) {
+      const tooth = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), toon(0x6f7478));
+      tooth.position.set((col - 1) * 0.15 + (row ? 0.05 : 0), -0.02 - row * 0.14, 0.22);
+      head.add(tooth);
+    }
+  }
+  head.userData.upright = true; // like the drawing: notch on top, face forward, always
+  head.userData.lift = 0.5;
+  return head;
+}
+
+function makeWorm() {
+  const m = new THREE.Group();
+
+  // curled tail loop with the red dot — the body sprouts from here
+  const loop = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.13, 10, 16), toon(MARKER_GREY));
+  loop.position.y = 0.45;
+  outline(loop, MARKER_GREY_DARK, 1.12);
+  m.add(loop);
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), toon(SPOKE_RED));
+  dot.position.y = 0.45;
+  m.add(dot);
+
+  const gr = makeGrabber(m, {
+    anchor: [0, 0.5, 0.2],
+    color: MARKER_GREY, dark: MARKER_GREY_DARK,
+    segments: 12, baseR: 0.3, tipR: 0.22, grabR: 0.6,
+    reach: 5.5, closeSpeed: 4.5, wiggle: 1.2,
+    rest: (t) => new THREE.Vector3(Math.sin(t * 0.7) * 0.8, 1.9 + Math.sin(t * 1.1) * 0.5, 1.0),
+    buildTip: makePeanutHead,
+  });
+
+  // red dangly legs hang off the body, like the drawing
+  const legs = [];
+  [2, 4, 6, 8].forEach((i) => {
+    const pivot = new THREE.Group();
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.6, 6), toon(SPOKE_RED));
+    leg.position.y = -0.42;
+    pivot.add(leg);
+    gr.balls[i].add(pivot);
+    legs.push(pivot);
+  });
+  m.userData.legs = legs;
+
+  m.userData.kind = 'worm';
+  m.userData.holdHeight = 3.0;
+  return m;
+}
+
+// the green stick alien with big black eyes and grabby twig hands
+function makeAlien() {
+  const m = new THREE.Group();
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 14), toon(ALIEN_GREEN));
+  head.scale.set(0.85, 1.25, 0.8);
+  head.position.y = 2.55;
+  outline(head, ALIEN_GREEN_DARK, 1.08);
+  m.add(head);
+  [-1, 1].forEach((side) => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 8), flat(0x14141c));
+    eye.scale.set(0.65, 1.5, 0.45);
+    eye.rotation.z = -side * 0.25;
+    eye.position.set(side * 0.15, 2.62, 0.28);
+    m.add(eye);
+  });
+  const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.035, 0.02), flat(0x14141c));
+  mouth.position.set(0, 2.22, 0.31);
+  m.add(mouth);
+
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.3, 8), toon(ALIEN_GREEN));
+  torso.position.y = 1.6;
+  m.add(torso);
+
+  // a twig fan: three prongs spreading out like the drawing's cool hands and feet
+  function twigFan(len, tiltX = 0) {
+    const fan = new THREE.Group();
+    [-0.55, 0, 0.55].forEach((a) => {
+      const pivot = new THREE.Group();
+      pivot.rotation.y = a;
+      pivot.rotation.x = tiltX;
+      const twig = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.02, len, 6), toon(ALIEN_GREEN));
+      twig.rotation.x = Math.PI / 2;
+      twig.position.z = len / 2;
+      pivot.add(twig);
+      fan.add(pivot);
+    });
+    return fan;
+  }
+
+  [-1, 1].forEach((side) => {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.0, 8), toon(ALIEN_GREEN));
+    leg.position.set(side * 0.16, 0.55, 0);
+    leg.rotation.z = -side * 0.18;
+    m.add(leg);
+    const foot = twigFan(0.4, 0.35); // splayed twig toes
+    foot.position.set(side * 0.26, 0.08, 0.05);
+    m.add(foot);
+  });
+
+  // two twiggy stick arms — one held high, one out to the side, like the drawing
+  [-1, 1].forEach((side) => {
+    makeGrabber(m, {
+      anchor: [side * 0.12, 2.15, 0.05],
+      color: ALIEN_GREEN, dark: ALIEN_GREEN_DARK,
+      segments: 8, baseR: 0.09, tipR: 0.065,
+      reach: 4.8, closeSpeed: 4.8, wiggle: 1.15,
+      aimOffset: [side * 0.55, 0.15, 0],
+      rest: (t) => new THREE.Vector3(
+        side * (1.25 + Math.sin(t * 0.9) * 0.3),
+        (side < 0 ? 1.7 : 0.9) + Math.sin(t * 1.1 + side) * 0.45,
+        0.3
+      ),
+      buildTip: () => twigFan(0.46),
+    });
+  });
+
+  m.userData.kind = 'alien';
+  m.userData.holdHeight = 3.3;
+  return m;
+}
+
+const MONSTER_MAKERS = [
+  makePurpleMonster, makeGreenMonster, makeYellowWheel,
+  makeSnake, makeDino, makeSnail, makeScribbleMonster,
+  makeLollipop, makeWorm, makeAlien,
+];
 
 // ---------- Audio ----------
 let audioCtx = null;
@@ -851,6 +1169,16 @@ function spawnMonster() {
   state.monsters.push(m);
 }
 
+// remove any object tree and free its GPU buffers (shared assets — shadow geometry, textures — stay)
+function disposeObject(obj) {
+  scene.remove(obj);
+  obj.traverse((o) => {
+    if (o.geometry && o.geometry !== shadowGeo) o.geometry.dispose();
+    if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach((mt) => mt.dispose());
+  });
+}
+const disposeMonster = disposeObject;
+
 function caught(m) {
   if (catching) return;
   state.running = false;
@@ -860,11 +1188,11 @@ function caught(m) {
 
 // ---------- Reset / start ----------
 function resetGame() {
-  for (const m of state.monsters) scene.remove(m);
-  for (const r of state.racks) scene.remove(r.group);
-  for (const fp of state.flyingPins) scene.remove(fp.mesh);
-  for (const fm of state.flyingMonsters) scene.remove(fm.mesh);
-  for (const s of state.shots) scene.remove(s.mesh);
+  for (const m of state.monsters) disposeMonster(m);
+  for (const r of state.racks) disposeObject(r.group);
+  for (const fp of state.flyingPins) disposeObject(fp.mesh);
+  for (const fm of state.flyingMonsters) disposeMonster(fm.mesh);
+  for (const s of state.shots) disposeObject(s.mesh);
   state.monsters = [];
   state.racks = [];
   state.flyingPins = [];
@@ -993,14 +1321,28 @@ function update(dt) {
       if (ud.kind === 'green') m.position.y = Math.abs(Math.sin(ud.bob)) * 0.4;
       if (ud.kind === 'purple') for (const w of ud.wheels) w.rotation.z -= ud.speed * sdt;
       if (ud.kind === 'wheel') ud.spinner.rotation.z -= ud.speed * sdt * 0.9;
-      if (ud.kind === 'dino') ud.legs.forEach((l, i) => { l.rotation.z = Math.sin(ud.bob * 1.6 + i * 2.1) * 0.35; });
+      if (ud.legs) ud.legs.forEach((l, i) => { l.rotation.z = Math.sin(ud.bob * 1.6 + i * 2.1) * 0.35; });
       if (ud.kind === 'scribble') { ud.tangle.rotation.y += sdt * 1.6; ud.tangle.rotation.x += sdt * 0.9; }
+      if (ud.kind === 'lollipop') m.rotation.z = Math.sin(ud.bob * 0.7) * 0.05; // tall pole sways
 
       m.updateMatrixWorld();
       updateGrabbers(m, dist, sdt, ball.position);
 
-      // a grabber tip touching the ball: slow ball is caught, fast ball rips free
-      const tipTouch = ud.grabbers.some((gr) => gr.cooldown === 0 && gr.tipWorld.distanceTo(ball.position) < GRAB_RADIUS);
+      // a grabber tip touching the ball: slow ball is caught, fast ball rips free.
+      // thick tubes (snake/worm — the tube IS the body) also catch along their mid-body.
+      const tipTouch = ud.grabbers.some((gr) => {
+        if (gr.cooldown !== 0) return false;
+        if (gr.tipWorld.distanceTo(ball.position) < GRAB_RADIUS + gr.grabR * m.scale.x) return true;
+        if (gr.baseR >= 0.25) {
+          const nLoc = gr.balls.length;
+          for (let i = 3; i < nLoc - 1; i += 4) {
+            const r = THREE.MathUtils.lerp(gr.baseR, gr.tipR, i / (nLoc - 1));
+            _p.copy(gr.balls[i].position).applyMatrix4(gr.group.matrixWorld);
+            if (_p.distanceTo(ball.position) < BALL_R + r * m.scale.x) return true;
+          }
+        }
+        return false;
+      });
       if (tipTouch && speed < BREAK_SPEED) {
         caught(m);
         break;
@@ -1049,7 +1391,8 @@ function update(dt) {
 
     // shots obey THE RULE too — they only fly while the ball moves.
     // stand frozen, fire a volley into the air, then roll: they all launch at once!
-    state.shots = state.shots.filter((s) => {
+    // (guarded so a shot can't knock anyone out on the very frame we got caught)
+    if (state.running) state.shots = state.shots.filter((s) => {
       s.mesh.position.addScaledVector(s.vel, sdt);
       s.mesh.rotation.x += sdt * 12;
       s.life -= sdt;
@@ -1074,12 +1417,12 @@ function update(dt) {
           if (hit) { doStrike(rack); spent = true; break; } // sniping a rack counts — always a strike!
         }
       }
-      if (spent) scene.remove(s.mesh);
+      if (spent) disposeObject(s.mesh);
       return !spent;
     });
 
     // monsters hit by a shot fly off like pins
-    for (const m of state.monsters) {
+    if (state.running) for (const m of state.monsters) {
       if (!m.userData.knocked) continue;
       knockSound();
       const dir = m.userData.knockDir;
@@ -1097,7 +1440,7 @@ function update(dt) {
     if (state.running) {
       state.monsters = state.monsters.filter((m) => {
         if (m.position.z - ball.position.z > 70) {
-          scene.remove(m);
+          disposeMonster(m);
           return false;
         }
         return true;
@@ -1122,7 +1465,7 @@ function update(dt) {
 
       state.racks = state.racks.filter((r) => {
         if (r.center.z - ball.position.z > 30) {
-          scene.remove(r.group);
+          disposeObject(r.group);
           return false;
         }
         return true;
@@ -1138,7 +1481,7 @@ function update(dt) {
         fm.life -= sdt;
         if (fm.life < 0.4) fm.mesh.scale.multiplyScalar(Math.max(0.01, 1 - sdt * 3));
         if (fm.life <= 0 || fm.mesh.position.y < -6) {
-          scene.remove(fm.mesh);
+          disposeMonster(fm.mesh);
           return false;
         }
         return true;
@@ -1153,7 +1496,7 @@ function update(dt) {
         fp.mesh.rotation.z += fp.spin.z * sdt;
         fp.life -= sdt;
         if (fp.life <= 0 || fp.mesh.position.y < -6) {
-          scene.remove(fp.mesh);
+          disposeObject(fp.mesh);
           return false;
         }
         return true;
@@ -1193,4 +1536,4 @@ state.running = false;
 tick();
 
 // debugging hook for tests
-window.__game = { state, ball, startGame, spawnMonster, update, render: () => renderer.render(scene, camera) };
+window.__game = { state, ball, camera, startGame, spawnMonster, update, render: () => renderer.render(scene, camera) };

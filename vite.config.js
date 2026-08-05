@@ -6,9 +6,14 @@ const only = process.env.ONLY;
 const inputs = {
   main: resolve(__dirname, 'index.html'),
   pendel: resolve(__dirname, 'pendel.html'),
+  schnitzel: resolve(__dirname, 'schnitzel.html'),
 };
 
 export default defineConfig({
+  server: {
+    port: process.env.PORT ? Number(process.env.PORT) : 5173,
+    strictPort: false,
+  },
   build: {
     rollupOptions: {
       input: only ? { [only]: inputs[only] } : inputs,

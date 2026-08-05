@@ -4,6 +4,15 @@ Three.js games designed by a kid, drawn with markers, and brought to life.
 
 **Game 1 — כדור באולינג בורח (Bowling Escape)** — open `/` (index.html)
 **Game 2 — פנדלים בנגיחה (Header Penalties)** — open `/pendel.html`
+**Game 3 — תופסת שניצל (Schnitzel Tag)** — open `/schnitzel.html`
+
+## 🍳 תופסת שניצל (Schnitzel Tag)
+
+You are a happy schnitzel. An angry frying pan chases you around the kitchen
+and scoops you up like a spatula — and when it catches you, the expressions
+swap: the pan gloats, the schnitzel sulks. Move in all directions, jump over
+the pan with Space, dodge the table and the pot. 3 lives, survive as many
+seconds as you can. Your best time is saved.
 
 ## ⚽ פנדלים בנגיחה (Header Penalties)
 
