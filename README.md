@@ -5,6 +5,17 @@ Three.js games designed by a kid, drawn with markers, and brought to life.
 **Game 1 — כדור באולינג בורח (Bowling Escape)** — open `/` (index.html)
 **Game 2 — פנדלים בנגיחה (Header Penalties)** — open `/pendel.html`
 **Game 3 — תופסת שניצל (Schnitzel Tag)** — open `/schnitzel.html`
+**Game 4 — דינו במבוך (Dino Maze)** — open `/dino.html`
+
+## 🦖 דינו במבוך (Dino Maze)
+
+You are the big dinosaur, seen from above, loose in a maze that never ends
+(it's generated from a hash — walk in any direction forever). Eat the little
+dinosaurs (+10 each; speed 5 out of 10). A fire-breathing dragon (speed 4)
+hunts *you* through the maze — one lick of flame and you're toast, literally.
+It inhales before it breathes, so duck behind a wall or shoot it with Space:
+three hits and it flees (+100), but it always comes back. Survive 200 seconds
+to win. The 🐉 compass on the screen edge shows where the danger is.
 
 ## 🍳 תופסת שניצל (Schnitzel Tag)
 
