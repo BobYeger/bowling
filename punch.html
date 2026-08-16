@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>משחק אגרופים!</title>
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f8f5ec; }
+    #app { position: fixed; inset: 0; }
+    canvas { display: block; }
+
+    .hud {
+      position: fixed;
+      font-family: "Comic Sans MS", "Chalkboard SE", Arial, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      direction: rtl;
+    }
+
+    #fighters {
+      top: 12px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 10px; z-index: 5;
+    }
+    .card {
+      background: rgba(248, 245, 236, .88);
+      border: 3px solid #2a2118;
+      border-radius: 14px 18px 15px 17px;
+      padding: 4px 12px 6px;
+      font-weight: 900; font-size: 16px; color: #2a2118;
+      text-align: center; min-width: 86px;
+      transition: transform .12s ease-out, opacity .3s;
+    }
+    .card .hearts { font-size: 13px; letter-spacing: 1px; direction: ltr; }
+    .card.me { border-width: 4px; transform: rotate(-1.5deg) scale(1.06); box-shadow: 0 4px 0 rgba(42,33,24,.25); }
+    .card.hit { transform: scale(1.18) rotate(2deg); }
+    .card.dead { opacity: .38; filter: grayscale(1); transform: rotate(3deg) scale(.92); }
+
+    #msg {
+      top: 20%; left: 50%; transform: translateX(-50%) scale(0) rotate(-3deg);
+      font-size: 54px; font-weight: 900; color: #b8321f;
+      font-family: "Comic Sans MS", "Chalkboard SE", Arial, sans-serif;
+      text-shadow: 0 3px 0 #f8f5ec, 0 6px 12px rgba(184,50,31,.25);
+      pointer-events: none; white-space: nowrap;
+      transition: transform .16s ease-out; z-index: 6;
+    }
+    #msg.show { transform: translateX(-50%) scale(1) rotate(-3deg); }
+    #msg.good { color: #2f8a25; text-shadow: 0 3px 0 #f8f5ec, 0 6px 12px rgba(47,138,37,.25); }
+
+    #hint {
+      bottom: 14px; left: 50%; transform: translateX(-50%);
+      font-size: 17px; font-weight: 700; color: #6b5d4a;
+      background: rgba(248,245,236,.82); border-radius: 12px; padding: 4px 14px;
+    }
+
+    .overlay {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(248, 245, 236, .9);
+      font-family: "Comic Sans MS", "Chalkboard SE", Arial, sans-serif;
+      direction: rtl; text-align: center;
+      color: #8a2be2; gap: 12px; z-index: 10;
+    }
+    .overlay h1 { font-size: 46px; margin: 0; transform: rotate(-1.5deg); color: #4a3ab8; }
+    .overlay p  { font-size: 21px; margin: 3px 0; color: #4c4234; }
+    .overlay .tip { font-size: 18px; opacity: .92; }
+    .overlay button {
+      font-size: 30px; font-weight: 900; font-family: inherit;
+      padding: 12px 42px; border-radius: 42px 38px 45px 36px;
+      border: 4px solid #2d2478;
+      background: #4a3ab8; color: #f8f5ec; cursor: pointer;
+      box-shadow: 0 6px 0 rgba(45,36,120,.35);
+      transform: rotate(-1deg);
+    }
+    .overlay button:active { transform: translateY(4px) rotate(-1deg); box-shadow: none; }
+    .hidden { display: none !important; }
+    .lineup { font-size: 30px; letter-spacing: 6px; }
+    .other-game { margin-top: 10px; font-size: 17px; }
+    .other-game a { font-weight: 900; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="fighters" class="hud"></div>
+  <div id="msg" class="hud"></div>
+  <div id="hint" class="hud hidden">🏃 חצים / WASD לזוז · 🥊 רווח לאגרוף</div>
+
+  <div id="intro" class="overlay">
+    <h1>🥊 משחק אגרופים! 🥊</h1>
+    <p class="lineup">🐱 👑 👸 🟣 ⚡</p>
+    <p>אתם <b>החתול הירוק</b> — וכל היער נגדכם!</p>
+    <p class="tip">👑 המלך · 👸 המלכה · 🟣 הקיסר · ⚡ היצור עם השיער הירוק</p>
+    <p class="tip">כולם מרביצים לכולם — מי שנשאר אחרון מנצח!</p>
+    <p class="tip">🥊 אגרוף שולח אותם לעוף! להעיף אותם על עצים זה כואב כפליים 🌳</p>
+    <p class="tip">🏃 זזים עם <b>החצים</b> או WASD · מרביצים עם <b>רווח</b></p>
+    <button id="startBtn">להתחיל בקטטה!</button>
+    <p class="other-game">עוד משחקים: <a href="/" style="color:#2b4bd7">🎳 באולינג בורח</a> · <a href="/pendel.html" style="color:#2b7a1f">⚽ פנדלים בנגיחה</a> · <a href="/schnitzel.html" style="color:#b3651a">🍳 תופסת שניצל</a> · <a href="/dino.html" style="color:#b8321f">🦖 דינו במבוך</a></p>
+  </div>
+
+  <div id="gameover" class="overlay hidden">
+    <h1 id="goTitle"></h1>
+    <p id="goDetail"></p>
+    <button id="restartBtn">עוד פעם!</button>
+  </div>
+
+  <script type="module" src="/src/punch.js"></script>
+</body>
+</html>

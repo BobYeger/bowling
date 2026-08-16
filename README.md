@@ -6,6 +6,28 @@ Three.js games designed by a kid, drawn with markers, and brought to life.
 **Game 2 — פנדלים בנגיחה (Header Penalties)** — open `/pendel.html`
 **Game 3 — תופסת שניצל (Schnitzel Tag)** — open `/schnitzel.html`
 **Game 4 — דינו במבוך (Dino Maze)** — open `/dino.html`
+**Game 5 — משחק אגרופים (Punch Game)** — open `/punch.html`
+
+## 🥊 משחק אגרופים (Punch Game)
+
+Five fighters in a forest, everyone against everyone, last one standing wins.
+You are the green cat-head (drawn with two mismatched ears, one buck tooth and
+long stick arms). Against you: the King (no arms — he whips his blue crescent
+tail around himself, crown bobbing), the Queen (no arms either — she spins her
+whole curled body like a figure skater, winking her V eye), the Emperor (a very
+tall wavy tube with a purple outline and bent blue BUG ARMS, mantis-style, with
+spiky claws) and the creature with the green mohawk (solid blue, electric spiky
+aura, the only one with proper stick arms). All of them are built straight from
+the kids' drawings. Move with arrows/WASD, punch with Space. The cat's punch is
+a STRETCH punch — his comically long drawing-arms shoot out ~4 units like
+elastic (fattening rubber-hose style as they fly), auto-aiming at the nearest
+fighter and clobbering everyone along the line, then snapping back with a
+boing. Punches send fighters flying with real physics (Rapier) — knock someone
+into a tree and it hurts extra. Treetops politely squash themselves down
+whenever they'd block your view of the action. NPCs genuinely fight each other, each with its own personality: the King
+hunts whoever is closest, the Queen picks on the weakest and dashes in and out,
+the Emperor is slow with a huge reach and double damage, and the creature is
+fast, twitchy and random.
 
 ## 🦖 דינו במבוך (Dino Maze)
 

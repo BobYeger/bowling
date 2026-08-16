@@ -8,6 +8,7 @@ const inputs = {
   pendel: resolve(__dirname, 'pendel.html'),
   schnitzel: resolve(__dirname, 'schnitzel.html'),
   dino: resolve(__dirname, 'dino.html'),
+  punch: resolve(__dirname, 'punch.html'),
 };
 
 export default defineConfig({
