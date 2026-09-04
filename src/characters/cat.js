@@ -15,7 +15,8 @@ import {
 // straight out of the head, each ending in a green mitten fist.
 //
 // Contract (see bottom of common.js): group origin at ground y=0, face on +Z.
-export function buildCat() {
+// `fill` recolours the cat — the second player's cat is the same drawing in blue.
+export function buildCat({ fill = PALETTE.catGreen } = {}) {
   const HEAD_Y = 0.8; // face-center height; head bottom sits ~y=0.3 (it floats)
 
   const group = new THREE.Group();
@@ -31,14 +32,14 @@ export function buildCat() {
   const headGeo = new THREE.SphereGeometry(1, 24, 18);
   headGeo.scale(0.75, 0.5, 0.45);
   wobble(headGeo, 0.035, 11);
-  const head = new THREE.Mesh(headGeo, toonMat(PALETTE.catGreen));
+  const head = new THREE.Mesh(headGeo, toonMat(fill));
   floater.add(head);
 
   // ---- Ears: both green triangles, deliberately mismatched ----
   // Left (-X): tall, narrow, standing nearly vertical. Tip lands ~y=1.45.
   const earLeft = new THREE.Mesh(
     wobble(new THREE.ConeGeometry(0.15, 0.44, 10, 1), 0.02, 21),
-    toonMat(PALETTE.catGreen)
+    toonMat(fill)
   );
   earLeft.position.set(-0.38, 0.43, 0);
   earLeft.rotation.z = 0.06;
@@ -46,7 +47,7 @@ export function buildCat() {
   // Right (+X): short, wide, flopped ~30 degrees outward.
   const earRight = new THREE.Mesh(
     wobble(new THREE.ConeGeometry(0.22, 0.3, 10, 1), 0.02, 22),
-    toonMat(PALETTE.catGreen)
+    toonMat(fill)
   );
   earRight.position.set(0.42, 0.35, 0);
   earRight.rotation.z = -0.52;
@@ -101,9 +102,9 @@ export function buildCat() {
 
   // ---- Arms: long ink stick arms straight out the sides of the head,
   // pivots at world (∓0.72, 0.55, 0). Right fist drawn bigger and lumpier. ----
-  const left = armAssembly(-1, 1.0, 0.2, PALETTE.catGreen);
+  const left = armAssembly(-1, 1.0, 0.2, fill);
   left.pivot.position.set(-0.72, -0.25, 0); // floater-local; world y = 0.55
-  const right = armAssembly(1, 1.0, 0.26, PALETTE.catGreen);
+  const right = armAssembly(1, 1.0, 0.26, fill);
   right.pivot.position.set(0.72, -0.25, 0);
   floater.add(left.pivot, right.pivot);
 

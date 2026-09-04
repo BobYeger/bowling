@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>כלב גולש!</title>
+  <link rel="icon" href="data:,">
+  <style>
+    #app canvas { width: 100%; height: 100%; touch-action: none; outline: none; }
+    #lives { letter-spacing: 2px; }
+    #lives .lost { opacity: .25; }
+    .overlay .keys { direction: rtl; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="score" class="hud badge tr">⭐ 0</div>
+  <div id="speed" class="hud badge tl hot">0 קמ״ש</div>
+  <div id="lives" class="hud badge tc">🦴🦴🦴</div>
+  <div id="msg" class="hud msg"></div>
+
+  <div id="intro" class="overlay">
+    <h1>🎿 כלב גולש! 🐕</h1>
+    <p>הכלב יורד על מגלשיים במורד הר מושלג — שאין לו סוף!</p>
+    <p class="tip">🚩 עוברים <b>בין שני הדגלים</b> = שער! ‎+50 · 🦴 אוספים עצמות ‎+10</p>
+    <p class="tip">🌲 עצים ו-🪨 סלעים מורידים עצם. יש שלוש — נגמרו? נפלתם בשלג.</p>
+    <p class="tip">⛰️ יש מקפצות בשלג! <b>רווח</b> = קפיצה, ובאוויר לוחצים על החצים כדי <b>להסתובב</b> — סיבוב שלם ‎+100</p>
+    <p class="tip">⬇️ חץ למטה או Shift = מתכופפים ומגבירים מהירות</p>
+    <p class="tip">🏃 גולשים עם <b>החצים</b> או WASD · במגע: ג׳ויסטיק משמאל, A קופץ, B מתכופף</p>
+    <button id="startBtn">גולשים!</button>
+    <p class="tip other-game"></p>
+  </div>
+
+  <div id="gameover" class="overlay hidden">
+    <h1 id="goTitle">🌨️ בום! נפלתם בשלג</h1>
+    <p class="big-score" id="finalScore"></p>
+    <p id="finalDetail"></p>
+    <p id="bestScore"></p>
+    <button id="restartBtn">עוד פעם!</button>
+    <p class="tip other-game"></p>
+  </div>
+
+  <script type="module" src="/src/ski.js"></script>
+</body>
+</html>

@@ -2,91 +2,40 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>פנדלים בנגיחה!</title>
-  <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f8f5ec; }
-    #app { position: fixed; inset: 0; }
-    canvas { display: block; }
-
-    .hud {
-      position: fixed;
-      font-family: "Comic Sans MS", "Chalkboard SE", Arial, sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
-      direction: rtl;
-    }
-
-    #score {
-      top: 16px; right: 20px;
-      font-size: 34px; font-weight: 900; color: #2b7a1f;
-      background: #f8f5ec;
-      padding: 6px 18px; border-radius: 14px 18px 15px 17px;
-      border: 3px solid #2b7a1f;
-      transform: rotate(-1deg);
-    }
-
-    #kicks {
-      top: 16px; left: 20px;
-      font-size: 26px; font-weight: 900; color: #444;
-      background: #f8f5ec;
-      padding: 6px 16px; border-radius: 16px 14px 17px 15px;
-      border: 3px solid #444;
-      transform: rotate(1deg);
-    }
-
-    #msg {
-      top: 24%; left: 50%; transform: translateX(-50%) scale(0) rotate(-3deg);
-      font-size: 68px; font-weight: 900; color: #2b7a1f;
-      text-shadow: 0 3px 0 #f8f5ec, 0 6px 12px rgba(43,122,31,.25);
-      pointer-events: none;
-      transition: transform .15s ease-out;
-      white-space: nowrap;
-    }
-    #msg.show { transform: translateX(-50%) scale(1) rotate(-3deg); }
-    #msg.bad { color: #b93007; text-shadow: 0 3px 0 #f8f5ec, 0 6px 12px rgba(185,48,7,.25); }
-
-    .overlay {
-      position: fixed; inset: 0;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: rgba(248, 245, 236, .88);
-      font-family: "Comic Sans MS", "Chalkboard SE", Arial, sans-serif;
-      direction: rtl; text-align: center;
-      color: #2b7a1f; gap: 13px; z-index: 10;
-    }
-    .overlay h1 { font-size: 50px; margin: 0; transform: rotate(-1.5deg); }
-    .overlay p  { font-size: 22px; margin: 3px 0; color: #1c5214; }
-    .overlay button {
-      font-size: 30px; font-weight: 900; font-family: inherit;
-      padding: 12px 42px; border-radius: 42px 38px 45px 36px;
-      border: 4px solid #1c5214;
-      background: #2b7a1f; color: #f8f5ec; cursor: pointer;
-      box-shadow: 0 6px 0 rgba(28,82,20,.35);
-      transform: rotate(-1deg);
-    }
-    .overlay button:active { transform: translateY(4px) rotate(-1deg); box-shadow: none; }
-    .hidden { display: none !important; }
-    .tip { font-size: 19px; opacity: .92; }
-    .other-game { margin-top: 10px; font-size: 18px; }
-    .other-game a { color: #2b4bd7; font-weight: 900; }
-  </style>
 </head>
 <body>
   <div id="app"></div>
 
-  <div id="score" class="hud">גולים: 0</div>
-  <div id="kicks" class="hud">בעיטות: 0</div>
-  <div id="msg" class="hud">גול!!!</div>
+  <div id="score" class="hud badge tr">⚽ 0</div>
+  <div id="kicks" class="hud badge tl">🦶 1/5</div>
+  <div id="who" class="hud badge tc hidden"></div>
+  <div id="msg" class="hud msg">גול!!!</div>
 
   <div id="intro" class="overlay">
     <h1>⚽ פנדלים בנגיחה!</h1>
-    <p>יש שער — ובתוכו שוער (בעצם שניים, אחד על הראש של השני 😄)</p>
+    <p>יש שער, ובתוכו שוער ירוק עם ידיים פרושות. אתם הנוגח בחולצה המפוספסת!</p>
     <p>הכדור מגיע <b>בהגבהה מאחורה</b> — מעל הראש שלכם!</p>
-    <p class="tip">🎯 מכוונים את העיגול האדום עם <b>החצים</b></p>
-    <p class="tip">🦘 לוחצים <b>רווח</b> כשהכדור מגיע אליכם — קופצים ונוגחים!</p>
-    <p class="tip">⭐ כל גול = נקודה אחת. השוער נהיה יותר טוב מגול לגול…</p>
-    <button id="startBtn">שחקו!</button>
-    <p class="other-game">עוד משחקים: <a href="/" style="color:#2b4bd7">🎳 באולינג בורח</a> · <a href="/schnitzel.html" style="color:#b3651a">🍳 תופסת שניצל</a> · <a href="/dino.html" style="color:#2f8a25">🦖 דינו במבוך</a> · <a href="/punch.html" style="color:#4a3ab8">🥊 משחק אגרופים</a></p>
+    <p class="tip">🎯 מכוונים את העיגול האדום עם <b>החצים</b> · 🦘 <b>רווח</b> כשהכדור מגיע — קופצים ונוגחים!</p>
+    <p class="tip">✨ נגיחה בדיוק בזמן = כדור טיל · 👀 השוער נשען לצד שהוא מנחש — תכוונו לצד השני!</p>
+    <p class="tip">5 בעיטות בסיבוב. כמה גולים תכניסו?</p>
+    <div class="row">
+      <button id="startBtn">שחקו!</button>
+      <button class="alt" data-action="start2">👫 2 שחקנים</button>
+    </div>
+    <p class="tip keys">2 שחקנים: הנוגח — חצים + <kbd>Enter</kbd> · השוער — <kbd>A</kbd> <kbd>D</kbd> · מתחלפים אחרי 5 בעיטות</p>
+    <p class="tip other-game"></p>
+  </div>
+
+  <div id="gameover" class="overlay hidden">
+    <h1 id="goTitle">🏁 נגמר הסיבוב!</h1>
+    <p class="big-score" id="finalScore"></p>
+    <p class="stars" id="finalStars"></p>
+    <p id="finalDetail"></p>
+    <p id="bestScore"></p>
+    <button id="restartBtn">עוד סיבוב!</button>
+    <p class="tip other-game"></p>
   </div>
 
   <script type="module" src="/src/pendel.js"></script>

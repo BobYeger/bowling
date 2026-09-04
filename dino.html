@@ -2,115 +2,43 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>דינו במבוך!</title>
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f8f5ec; }
-    #app { position: fixed; inset: 0; }
-    canvas { display: block; }
-
-    .hud {
-      position: fixed;
-      font-family: "Comic Sans MS", "Chalkboard SE", Arial, sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
-      direction: rtl;
-    }
-
-    #timer {
-      top: 16px; right: 20px;
-      font-size: 34px; font-weight: 900; color: #b8321f;
-      background: #f8f5ec;
-      padding: 6px 18px; border-radius: 14px 18px 15px 17px;
-      border: 3px solid #b8321f;
-      transform: rotate(-1deg);
-      font-variant-numeric: tabular-nums;
-    }
-    #timer.low { animation: blink .5s steps(2) infinite; }
-    @keyframes blink { 50% { background: #ffd9d3; } }
-
-    #score {
-      top: 16px; left: 20px;
-      font-size: 30px; font-weight: 900; color: #2f8a25;
-      background: #f8f5ec;
-      padding: 6px 16px; border-radius: 16px 14px 17px 15px;
-      border: 3px solid #2f8a25;
-      transform: rotate(1deg);
-      direction: ltr;
-      transition: transform .12s ease-out;
-      font-variant-numeric: tabular-nums;
-    }
-    #score.pop { transform: rotate(1deg) scale(1.18); }
-
-    #msg {
-      top: 24%; left: 50%; transform: translateX(-50%) scale(0) rotate(-3deg);
-      font-size: 58px; font-weight: 900; color: #2f8a25;
-      text-shadow: 0 3px 0 #f8f5ec, 0 6px 12px rgba(47,138,37,.25);
-      pointer-events: none;
-      transition: transform .15s ease-out;
-      white-space: nowrap;
-    }
-    #msg.show { transform: translateX(-50%) scale(1) rotate(-3deg); }
-    #msg.bad { color: #b8321f; text-shadow: 0 3px 0 #f8f5ec, 0 6px 12px rgba(184,50,31,.25); }
-
-    #dragonArrow {
+    .arrow {
       display: none;
       font-size: 34px;
-      background: rgba(248,245,236,.9);
-      border: 3px solid #b8321f;
+      background: rgba(248, 245, 236, .9);
+      border: 3px solid var(--hot-dark);
       border-radius: 50%;
       padding: 4px 8px 8px;
       transform: translate(-50%, -50%);
       pointer-events: none;
       z-index: 5;
     }
-    #dragonArrow.charging { animation: pulse .35s steps(2) infinite; }
+    .arrow.exit { border-color: var(--accent); }
+    .arrow.charging { animation: pulse .35s steps(2) infinite; }
     @keyframes pulse { 50% { background: #ff5c40; box-shadow: 0 0 22px #ff5c40; } }
-
-    .overlay {
-      position: fixed; inset: 0;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: rgba(248, 245, 236, .88);
-      font-family: "Comic Sans MS", "Chalkboard SE", Arial, sans-serif;
-      direction: rtl; text-align: center;
-      color: #2f8a25; gap: 12px; z-index: 10;
-    }
-    .overlay h1 { font-size: 48px; margin: 0; transform: rotate(-1.5deg); }
-    .overlay p  { font-size: 22px; margin: 3px 0; color: #205c18; }
-    .overlay .big-score { font-size: 38px; font-weight: 900; color: #b8321f; transform: rotate(1deg); }
-    .overlay button {
-      font-size: 30px; font-weight: 900; font-family: inherit;
-      padding: 12px 42px; border-radius: 42px 38px 45px 36px;
-      border: 4px solid #205c18;
-      background: #2f8a25; color: #f8f5ec; cursor: pointer;
-      box-shadow: 0 6px 0 rgba(32,92,24,.35);
-      transform: rotate(-1deg);
-    }
-    .overlay button:active { transform: translateY(4px) rotate(-1deg); box-shadow: none; }
-    .hidden { display: none !important; }
-    .tip { font-size: 19px; opacity: .92; }
-    .other-game { margin-top: 10px; font-size: 18px; }
-    .other-game a { font-weight: 900; }
   </style>
 </head>
 <body>
   <div id="app"></div>
 
-  <div id="timer" class="hud">⏱️ 200</div>
-  <div id="score" class="hud">🍖 0</div>
-  <div id="msg" class="hud"></div>
-  <div id="dragonArrow" class="hud">🐉</div>
+  <div id="timer" class="hud badge tr hot">⏱️ 150</div>
+  <div id="score" class="hud badge tl">🍖 0/15</div>
+  <div id="msg" class="hud msg"></div>
+  <div id="arrows"></div>
 
   <div id="intro" class="overlay">
     <h1>🦖 דינו במבוך! 🐉</h1>
     <p>אתם הדינוזאור הגדול, במבוך שאין לו סוף!</p>
-    <p class="tip">🍖 אוכלים דינוזאורים קטנים — כל אחד ‎+10 נקודות</p>
-    <p class="tip">🐉 אבל דרקון יורק אש רודף אחריכם — אם האש פוגעת, זה הסוף!</p>
-    <p class="tip">💥 לוחצים <b>רווח</b> כדי לירות בדרקון — 3 פגיעות והוא בורח!</p>
-    <p class="tip">🏃 זזים עם <b>החצים</b> או WASD · שימו לב לחץ ה־🐉 שמראה מאיפה הוא בא</p>
-    <p class="tip">⏱️ שורדים <b>200 שניות</b> — ומנצחים!</p>
+    <p class="tip">🍖 אוכלים <b>15 דינוזאורים קטנים</b> — ואז נפתחת היציאה 🚪. רוצו אליה!</p>
+    <p class="tip">⚡ אוכלים אחד אחרי השני = <b>שרשרת</b> — רצים מהר יותר ומקבלים יותר נקודות!</p>
+    <p class="tip">🐉 דרקון יורק אש רודף אחריכם — אם האש פוגעת, זה הסוף! <b>רווח</b> יורה בו: 3 פגיעות והוא בורח (אבל חוזר יותר מהיר…)</p>
+    <p class="tip">🏃 זזים עם <b>החצים</b> או WASD · החצים 🐉 🚪 בקצה המסך מראים לאן</p>
+    <p class="tip">⏱️ יש 150 שניות — ואז הדרקונים מתעצבנים!</p>
     <button id="startBtn">שחקו!</button>
-    <p class="other-game">עוד משחקים: <a href="/" style="color:#2b4bd7">🎳 באולינג בורח</a> · <a href="/pendel.html" style="color:#2b7a1f">⚽ פנדלים בנגיחה</a> · <a href="/schnitzel.html" style="color:#b3651a">🍳 תופסת שניצל</a> · <a href="/punch.html" style="color:#4a3ab8">🥊 משחק אגרופים</a></p>
+    <p class="tip other-game"></p>
   </div>
 
   <div id="gameover" class="overlay hidden">
@@ -119,6 +47,7 @@
     <p id="finalDetail"></p>
     <p id="bestScore"></p>
     <button id="restartBtn">עוד פעם!</button>
+    <p class="tip other-game"></p>
   </div>
 
   <script type="module" src="/src/dino.js"></script>

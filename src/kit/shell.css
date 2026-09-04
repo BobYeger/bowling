@@ -1,0 +1,127 @@
+/* Shared "marker on paper" shell: HUD badges, flash messages, overlays, floating
+   score numbers and the touch pad. Each game sets --accent / --accent-dark from
+   games.json (see kit/hud.js), so the same rules paint every page in its colour. */
+:root {
+  --paper: #f8f5ec;
+  --ink: #2a2118;
+  --accent: #2b4bd7;
+  --accent-dark: #1d35a8;
+  --hot: #e8481c;
+  --hot-dark: #b93007;
+  --font: "Comic Sans MS", "Chalkboard SE", "Comic Neue", Arial, sans-serif;
+}
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--paper); }
+#app { position: fixed; inset: 0; }
+canvas { display: block; }
+
+.hud {
+  position: fixed;
+  font-family: var(--font);
+  user-select: none;
+  -webkit-user-select: none;
+  direction: rtl;
+  z-index: 4;
+}
+
+/* score / timer badges — a wobbly hand-cut card in the game's colour */
+.badge {
+  --tilt: -1deg;
+  font-size: clamp(17px, 3.6vw, 30px); font-weight: 900; color: var(--accent);
+  background: var(--paper); border: 3px solid var(--accent);
+  padding: clamp(3px, 0.7vw, 6px) clamp(8px, 1.8vw, 16px); border-radius: 16px 14px 17px 15px;
+  font-variant-numeric: tabular-nums;
+  transition: transform .12s ease-out;
+  transform: rotate(var(--tilt));
+  white-space: nowrap;
+}
+.badge.tr { top: 16px; right: 20px; }
+.badge.tl { top: 16px; left: 20px; --tilt: 1deg; direction: ltr; }
+.badge.tc { top: 16px; left: 50%; transform: translateX(-50%) rotate(var(--tilt)); }
+.badge.hot { color: var(--hot-dark); border-color: var(--hot-dark); }
+.badge.pop { transform: rotate(var(--tilt)) scale(1.18); }
+.badge.tc.pop { transform: translateX(-50%) rotate(var(--tilt)) scale(1.18); }
+.badge.low { animation: blink .5s steps(2) infinite; }
+@media (max-width: 720px) { .badge.tc { top: auto; bottom: 14px; } }
+@keyframes blink { 50% { background: #ffd9d3; } }
+
+/* the big centre flash ("STRIKE!", "GOAL!") */
+.msg {
+  top: 24%; left: 50%; transform: translateX(-50%) scale(0) rotate(-3deg);
+  font-size: clamp(38px, 7vw, 64px); font-weight: 900; color: var(--accent);
+  text-shadow: 0 3px 0 var(--paper), 0 6px 12px rgba(0, 0, 0, .15);
+  pointer-events: none; white-space: nowrap;
+  transition: transform .15s ease-out; z-index: 6;
+}
+.msg.show { transform: translateX(-50%) scale(1) rotate(-3deg); }
+.msg.bad { color: var(--hot-dark); }
+.msg.good { color: #2f8a25; }
+
+/* intro / game-over cards */
+.overlay {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(248, 245, 236, .9);
+  font-family: var(--font); direction: rtl; text-align: center;
+  color: var(--accent); gap: 12px; padding: 14px; box-sizing: border-box;
+  overflow-y: auto;
+}
+.overlay h1 { font-size: clamp(30px, 6vw, 50px); margin: 0; transform: rotate(-1.5deg); }
+.overlay p { font-size: clamp(16px, 2.6vw, 22px); margin: 3px 0; color: var(--accent-dark); }
+.overlay .big-score { font-size: clamp(26px, 4.5vw, 38px); font-weight: 900; color: var(--hot); transform: rotate(1deg); }
+.overlay .tip { font-size: clamp(15px, 2.2vw, 19px); opacity: .92; }
+.overlay .row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.overlay button {
+  font-size: 28px; font-weight: 900; font-family: inherit;
+  padding: 12px 40px; border-radius: 42px 38px 45px 36px;
+  border: 4px solid var(--accent-dark);
+  background: var(--accent); color: var(--paper); cursor: pointer;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .2);
+  transform: rotate(-1deg);
+}
+.overlay button.alt { background: var(--paper); color: var(--accent); }
+.overlay button:active { transform: translateY(4px) rotate(-1deg); box-shadow: none; }
+.hidden { display: none !important; }
+.other-game { margin-top: 10px; font-size: 18px; }
+.other-game a { font-weight: 900; text-decoration: none; margin: 0 4px; }
+.lineup { font-size: 30px; letter-spacing: 6px; }
+.keys kbd {
+  font-family: inherit; background: var(--paper); border: 2px solid var(--accent-dark);
+  border-radius: 6px; padding: 0 6px; direction: ltr; display: inline-block;
+}
+.stars { font-size: 34px; letter-spacing: 4px; }
+
+/* sound toggle */
+#mute {
+  bottom: 14px; right: 16px; font-size: 22px; cursor: pointer;
+  background: rgba(248, 245, 236, .85); border: 3px solid var(--ink); border-radius: 50%;
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  z-index: 7;
+}
+
+/* floating "+10" numbers, projected from world space every frame */
+#popups { position: fixed; inset: 0; pointer-events: none; z-index: 5; font-family: var(--font); }
+.popnum {
+  position: absolute; left: 0; top: 0; font-size: 30px; font-weight: 900;
+  color: var(--accent); text-shadow: 0 2px 0 var(--paper), 0 0 6px var(--paper);
+  white-space: nowrap; will-change: transform, opacity;
+}
+
+/* touch pad: floating stick on the left half, A/B buttons on the right */
+#touch { position: fixed; inset: 0; z-index: 3; touch-action: none; }
+#touch .stick {
+  position: absolute; width: 130px; height: 130px; border-radius: 50%;
+  border: 3px dashed var(--ink); opacity: .5; display: none; transform: translate(-50%, -50%);
+}
+#touch .stick .knob {
+  position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; border-radius: 50%;
+  background: var(--accent); transform: translate(-50%, -50%);
+}
+#touch .tbtn {
+  position: absolute; width: 84px; height: 84px; border-radius: 50%;
+  border: 4px solid var(--ink); background: rgba(248, 245, 236, .75);
+  font-size: 34px; display: flex; align-items: center; justify-content: center; opacity: .85;
+  font-family: var(--font);
+}
+#touch .tbtn.a { bottom: 96px; right: 28px; }
+#touch .tbtn.b { bottom: 30px; right: 132px; width: 66px; height: 66px; font-size: 26px; }
+#touch .tbtn.on { background: var(--accent); }

@@ -1,11 +1,16 @@
 import * as THREE from 'three';
+import { toonMat as kitToon, noOutline, outlineTint, wobble, blob } from '../kit/toon.js';
 
 // ---------- Marker-on-paper palette (matches the kids' drawings) ----------
+// See drawings/punch-fighters-1.webp (the cat) and drawings/punch-fighters-2.webp
+// (the emperor, the king, the queen and the creature with the green mohawk).
 export const PALETTE = {
   paper: 0xf8f5ec,       // the page everything is drawn on
   ink: 0x2a2118,         // black marker outlines / stick limbs
   catGreen: 0x74b26d,    // player cat-head fill
   catGreenDark: 0x4d8a47,
+  catBlue: 0x5b8fd6,     // the second player's cat
+  catBlueDark: 0x2f5fa8,
   markerBlue: 0x3d7fc7,  // kid's blue marker (king body, queen, mohawk creature)
   lightBlue: 0xa5cbe8,   // mohawk creature's spiky aura
   purple: 0x9061b8,      // emperor's tall body outline
@@ -17,65 +22,18 @@ export const PALETTE = {
   grassGreen: 0x3e9e4f,
 };
 
-// ---------- Shared 3-tone gradient map => marker-style cel shading ----------
-let _gradient = null;
-export function toonGradient() {
-  if (_gradient) return _gradient;
-  const data = new Uint8Array([110, 110, 110, 255, 200, 200, 200, 255, 255, 255, 255, 255]);
-  _gradient = new THREE.DataTexture(data, 3, 1, THREE.RGBAFormat);
-  _gradient.minFilter = THREE.NearestFilter;
-  _gradient.magFilter = THREE.NearestFilter;
-  _gradient.needsUpdate = true;
-  return _gradient;
-}
-
+// Characters tint outlines per body part, so every material here is its own instance
+// (the kit's shared cache would leak one character's outline colour onto another).
 export function toonMat(color, opts = {}) {
-  const m = new THREE.MeshToonMaterial({ color, gradientMap: toonGradient(), ...opts });
-  return m;
+  return kitToon(color, { unique: true, ...opts });
 }
 
 // Stick limbs are already "ink", they need no outline shell.
 export function inkMat() {
-  const m = new THREE.MeshBasicMaterial({ color: PALETTE.ink });
-  noOutline(m);
-  return m;
+  return noOutline(new THREE.MeshBasicMaterial({ color: PALETTE.ink }));
 }
 
-// OutlineEffect (used by the game renderer) reads these per-material params.
-export function noOutline(material) {
-  material.userData.outlineParameters = { visible: false };
-  return material;
-}
-export function outlineTint(material, color, thickness = 0.0075) {
-  material.userData.outlineParameters = { color: new THREE.Color(color).toArray(), thickness };
-  return material;
-}
-
-// ---------- Hand-drawn wobble: displace vertices with a deterministic hash ----------
-function hash3(x, y, z, seed) {
-  let h = Math.imul(Math.round(x * 173), 0x27d4eb2d) ^ Math.imul(Math.round(y * 289), 0x165667b1)
-    ^ Math.imul(Math.round(z * 233), 0x9e3779b1) ^ Math.imul(seed, 0x85ebca77);
-  h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
-  return (((h ^ (h >>> 13)) >>> 0) / 4294967296) * 2 - 1;
-}
-export function wobble(geometry, amp = 0.045, seed = 1) {
-  const pos = geometry.attributes.position;
-  const n = new THREE.Vector3();
-  for (let i = 0; i < pos.count; i++) {
-    n.set(pos.getX(i), pos.getY(i), pos.getZ(i));
-    const d = hash3(n.x * 7, n.y * 7, n.z * 7, seed) * amp;
-    const len = n.length() || 1;
-    pos.setXYZ(i, n.x + (n.x / len) * d, n.y + (n.y / len) * d, n.z + (n.z / len) * d);
-  }
-  geometry.computeVertexNormals();
-  return geometry;
-}
-
-// A lumpy hand-drawn ball (fists, blobs, canopies).
-export function blob(r = 0.3, opts = {}) {
-  const { detail = 2, amp = r * 0.16, seed = 3 } = opts;
-  return wobble(new THREE.IcosahedronGeometry(r, detail), amp, seed);
-}
+export { noOutline, outlineTint, wobble, blob };
 
 // ---------- Face parts ----------
 // A cartoon eye: white oval + black pupil, looking along +Z.
@@ -134,8 +92,7 @@ export function crown(width = 0.5, height = 0.3, spikes = 4) {
   shape.closePath();
   const geo = new THREE.ExtrudeGeometry(shape, { depth: width * 0.16, bevelEnabled: false });
   geo.translate(0, height * 0.28, -width * 0.08);
-  const mesh = new THREE.Mesh(geo, toonMat(PALETTE.crownYellow));
-  return mesh;
+  return new THREE.Mesh(geo, toonMat(PALETTE.crownYellow));
 }
 
 // ---------- Character contract ----------

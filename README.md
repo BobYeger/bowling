@@ -1,80 +1,19 @@
-# 🎳⚽ משחקי הטוש (The Marker Games)
+# 🎳⚽🦖🥊🎿 משחקי הטוש (The Marker Games)
 
-Three.js games designed by a kid, drawn with markers, and brought to life.
+Five games designed by kids, drawn with markers, and brought to life. Every
+game is a page of the same little kit: cel-shaded "marker on paper" rendering, one
+keyboard or a touch pad, one or two players, and a headless test that drives it.
 
-**Game 1 — כדור באולינג בורח (Bowling Escape)** — open `/` (index.html)
-**Game 2 — פנדלים בנגיחה (Header Penalties)** — open `/pendel.html`
-**Game 3 — תופסת שניצל (Schnitzel Tag)** — open `/schnitzel.html`
-**Game 4 — דינו במבוך (Dino Maze)** — open `/dino.html`
-**Game 5 — משחק אגרופים (Punch Game)** — open `/punch.html`
+| Game | Page | The kid's rule |
+|---|---|---|
+| 🎳 **כדור באולינג בורח** (Bowling Escape) | `/` | The world only moves when the ball moves. Every strike is worth ten, and the crowd of monsters keeps growing the longer you roll. |
+| ⚽ **פנדלים בנגיחה** (Header Penalties) | `/pendel.html` | Read the keeper's lean, head the lob into the corner he isn't. Five kicks a round; two players can take turns as keeper. |
+| 🦖 **דינו במבוך** (Dino Maze) | `/dino.html` | Eat fifteen little dinos in an endless maze, dodge the dragon's flame, find the exit before the dragons get angry. |
+| 🥊 **משחק אגרופים** (Punch Game) | `/punch.html` | Stretch-punch the whole forest, dash out of trouble, survive wave after wave. A second cat can join. |
+| 🎿 **כלב גולש** (Kelpie Downhill) | `/ski.html` | Our real dog, as a 3D model, skis an endless slope: thread the gates, grab the bones, launch off kickers and spin. Three bones, no lift ticket. |
 
-## 🥊 משחק אגרופים (Punch Game)
-
-Five fighters in a forest, everyone against everyone, last one standing wins.
-You are the green cat-head (drawn with two mismatched ears, one buck tooth and
-long stick arms). Against you: the King (no arms — he whips his blue crescent
-tail around himself, crown bobbing), the Queen (no arms either — she spins her
-whole curled body like a figure skater, winking her V eye), the Emperor (a very
-tall wavy tube with a purple outline and bent blue BUG ARMS, mantis-style, with
-spiky claws) and the creature with the green mohawk (solid blue, electric spiky
-aura, the only one with proper stick arms). All of them are built straight from
-the kids' drawings. Move with arrows/WASD, punch with Space. The cat's punch is
-a STRETCH punch — his comically long drawing-arms shoot out ~4 units like
-elastic (fattening rubber-hose style as they fly), auto-aiming at the nearest
-fighter and clobbering everyone along the line, then snapping back with a
-boing. Punches send fighters flying with real physics (Rapier) — knock someone
-into a tree and it hurts extra. Treetops politely squash themselves down
-whenever they'd block your view of the action. NPCs genuinely fight each other, each with its own personality: the King
-hunts whoever is closest, the Queen picks on the weakest and dashes in and out,
-the Emperor is slow with a huge reach and double damage, and the creature is
-fast, twitchy and random.
-
-## 🦖 דינו במבוך (Dino Maze)
-
-You are the big dinosaur, seen from above, loose in a maze that never ends
-(it's generated from a hash — walk in any direction forever). Eat the little
-dinosaurs (+10 each; speed 5 out of 10). A fire-breathing dragon (speed 4)
-hunts *you* through the maze — one lick of flame and you're toast, literally.
-It inhales before it breathes, so duck behind a wall or shoot it with Space:
-three hits and it flees (+100), but it always comes back. Survive 200 seconds
-to win. The 🐉 compass on the screen edge shows where the danger is.
-
-## 🍳 תופסת שניצל (Schnitzel Tag)
-
-You are a happy schnitzel. An angry frying pan chases you around the kitchen
-and scoops you up like a spatula — and when it catches you, the expressions
-swap: the pan gloats, the schnitzel sulks. Move in all directions, jump over
-the pan with Space, dodge the table and the pot. 3 lives, survive as many
-seconds as you can. Your best time is saved.
-
-## ⚽ פנדלים בנגיחה (Header Penalties)
-
-There's a goal, and inside it a goalkeeper — actually two, one standing on the
-other's head, exactly as drawn. The ball comes **lobbed from behind you**, over
-your head. Aim the red reticle with the arrows, press Space as the ball arrives
-to jump and head it. Every goal is one point, and the keeper tower gets sharper
-with every goal you score.
-
-## 🎳 כדור באולינג בורח (Bowling Escape)
-
-A bowling ball flees from monsters down an endless paper lane. Hit the pins —
-it's **always a strike** — and score 10 points. The twist: **the world only
-moves when the ball moves.** Stand still and everything freezes.
-
-## How to play
-
-- **Arrows / WASD** — roll the ball
-- **Space** — shoot mini bowling balls at monsters (strikes refill your ammo)
-- **Enter / Space** — start or restart
-- Touching a monster (or a grabber tip, when you're slow) = caught!
-- Fast balls rip free from grabber tips; standing still freezes the world — use it!
-
-## The monsters
-
-All designed on paper with markers: the purple loop on wheels, the green
-stalk-eyed zigzag, the yellow spoked wheel, the snake with the blue head,
-the dino with orange legs, the orange spiral snail — plus one from Claude's
-imagination: the Scribble Monster. Each one grabs with a different body part.
+The drawings the games were built from are in [`drawings/`](drawings/README.md); the
+one-page design sheets ("verb sheets") are in [`design/`](design/README.md).
 
 ## Run it
 
@@ -83,6 +22,45 @@ npm install
 npm run dev
 ```
 
-Build for production with `npm run build`.
+`npm run build` builds all pages into `dist/`. `npm run build:artifacts` builds each game
+as a single self-contained HTML fragment in `artifacts/`, ready to publish (cross-links
+then point at the published artifact URLs in `games.json`). `npm test` runs the headless
+balance checks in Chrome.
+
+## Controls
+
+- **One player:** arrows or WASD to move · **Space** = the action (shoot / head / punch) ·
+  **Shift** = dash (punch game) · Enter or Space starts and restarts.
+- **Two players** (penalties, punch): player 1 = arrows + Enter + right Shift, player 2 =
+  WASD + Space + left Shift.
+- **Touch:** drag on the left half of the screen to move, tap the buttons on the right.
+- 🔊 in the corner mutes everything, and remembers.
+
+## How it's built
+
+- `games.json` — the one list of games: page, title, colour, published artifact URL. The
+  Vite config, the "more games" links on every intro card and the artifact build all read
+  it, so adding a game touches one file plus its own page and source.
+- `src/kit/` — the shared engine:
+  - `app.js` renderer, scene, lights, marker outlines (three's `OutlineEffect`) and the
+    frame loop; `?sim` in the URL stops the loop so tests can step it by hand
+  - `toon.js` cached cel materials, per-material outline tints, blob shadows, hull
+    outlines for instanced props, hand-drawn textures, wobble
+  - `input.js` one- or two-player keyboard maps, edge-triggered actions, touch pad
+  - `hud.js` badges, the centre flash, overlays, manifest links, best scores, mute
+  - `audio.js` beeps, noise bursts, a master mute and a tiny generative music box
+  - `juice.js` hitstop, camera shake, floating score numbers, squash-and-stretch
+- `src/characters/` — the punch game's fighters, each built from its drawing.
+- `src/main.js`, `pendel.js`, `dino.js`, `punch.js` — one file per game.
+- `src/ski.js` — the ski game; Babylon.js (`@babylonjs/core`) instead of three.js because the dog
+  model (`src/assets/dog.glb`, see `design/ski.md`) was exported for Babylon, but it uses the kit's
+  HUD, input, audio and `?sim` hook like every other page.
+- `tests/` — Playwright specs that load each page with `?sim`, drive
+  `window.__<game>.step(dt)` and assert the balance rules from the design sheets.
+
+## Publish flow
+
+`npm run build:artifacts -- <id>` writes `artifacts/<id>.html`; publish it with the
+Artifact tool using the `artifact` URL from `games.json` to keep the same link.
 
 🤖 Built with [Claude Code](https://claude.com/claude-code)

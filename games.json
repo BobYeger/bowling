@@ -1,0 +1,59 @@
+{
+  "games": [
+    {
+      "id": "main",
+      "page": "index.html",
+      "path": "/",
+      "emoji": "🎳",
+      "title": "כדור באולינג בורח",
+      "short": "באולינג בורח",
+      "accent": "#2b4bd7",
+      "accentDark": "#1d35a8",
+      "artifact": "https://claude.ai/code/artifact/5b968668-3c4e-4a6c-a373-767c4a63020f"
+    },
+    {
+      "id": "pendel",
+      "page": "pendel.html",
+      "path": "/pendel.html",
+      "emoji": "⚽",
+      "title": "פנדלים בנגיחה",
+      "short": "פנדלים בנגיחה",
+      "accent": "#2b7a1f",
+      "accentDark": "#1c5214",
+      "artifact": "https://claude.ai/code/artifact/e889e6eb-74a8-4a69-b9aa-9b2633b408bf"
+    },
+    {
+      "id": "dino",
+      "page": "dino.html",
+      "path": "/dino.html",
+      "emoji": "🦖",
+      "title": "דינו במבוך",
+      "short": "דינו במבוך",
+      "accent": "#2f8a25",
+      "accentDark": "#205c18",
+      "artifact": "https://claude.ai/code/artifact/93eedb89-2ed7-4410-9557-e4b163edd2a2"
+    },
+    {
+      "id": "punch",
+      "page": "punch.html",
+      "path": "/punch.html",
+      "emoji": "🥊",
+      "title": "משחק אגרופים",
+      "short": "משחק אגרופים",
+      "accent": "#4a3ab8",
+      "accentDark": "#2d2478",
+      "artifact": "https://claude.ai/code/artifact/e6eb4ed7-ea28-4cae-a2fd-86f9204f0372"
+    },
+    {
+      "id": "ski",
+      "page": "ski.html",
+      "path": "/ski.html",
+      "emoji": "🎿",
+      "title": "כלב גולש",
+      "short": "כלב גולש",
+      "accent": "#2f6fd6",
+      "accentDark": "#1f4b93",
+      "artifact": "https://claude.ai/code/artifact/32b3a58e-b133-45d1-af22-22e306ebbf39"
+    }
+  ]
+}
