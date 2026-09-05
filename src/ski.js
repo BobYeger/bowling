@@ -19,7 +19,8 @@ const V3 = BABYLON.Vector3;
 const T = {
   slopeDeg: 14, halfWidth: 48, chunkLen: 60, chunkHalfW: 68, gridX: 46, gridZ: 24, ahead: 5, behind: 1,
   g: 9.81, drag: 0.0047, dragTuck: 0.0030, carveDrag: 0.32, startSpeed: 7, minSpeed: 3,
-  turnRate: 2.5, maxHeading: 1.15, straighten: 1.2, jumpV: 4.6, lives: 3,
+  maxHeading: 1.15, leanSpring: 42, leanDamp: 9.5, leanBase: 0.35, leanPerSpeed: 0.022, leanMax: 0.95, grip: 1.25,
+  kickTime: 0.16, kickLean: 0.18, recentre: 0.9, jumpV: 4.6, lives: 3, kneeDrop: 0.09,
   treeR: 0.55, rockR: 0.95, dogR: 0.34, boneR: 1.3, gateHalf: 2.4,
 };
 const SLOPE = (T.slopeDeg * Math.PI) / 180;
@@ -32,6 +33,7 @@ const state = {
   x: 0, z: 0, y: 0, vy: 0, heading: 0, speed: 0, air: false, airTime: 0, spin: 0,
   lives: T.lives, score: 0, dist: 0, bones: 0, gates: 0, tuck: false, inv: 0, shake: 0, landBounce: 0,
   crouch: 0, overTimer: 0,
+  lean: 0, leanVel: 0, kick: 0, kickSign: 0, prevTurn: 0, aLat: 0, skid: 0,
 };
 // the test hook drives these directly; play reads them from the kit input every frame
 const ctrl = { left: false, right: false, tuck: false, jumpQueued: false, turn: 0 };
@@ -384,6 +386,7 @@ const dogPivot = new BABYLON.TransformNode('dogPivot', scene);   // model orient
 dogPivot.parent = dogRoot;
 dogRoot.rotationQuaternion = BABYLON.Quaternion.Identity();
 let dogMeshes = [];
+let kneeTarget = null, accNode = null;
 const skiMat = new BABYLON.StandardMaterial('ski', scene);
 skiMat.diffuseColor = new BABYLON.Color3(0.80, 0.22, 0.20); skiMat.specularColor = new BABYLON.Color3(0.5, 0.5, 0.5); skiMat.specularPower = 64;
 const tipMat = new BABYLON.StandardMaterial('tip', scene);
@@ -478,6 +481,25 @@ async function loadDog() {
   dogPivot.computeWorldMatrix(true); scene.updateTransformMatrix();
   for (const m of dogMeshes) m.computeWorldMatrix(true);
   buildSkis([0.29, -0.25], 0.085);   // paws sit 0.29 m ahead / 0.25 m behind the model origin
+  // knee bend without a skeleton: a morph target that shortens the legs (below the belly line) by
+  // 30% and drops the body by the same amount; eyes, nose and collar ride along on a helper node
+  const body = dogMeshes.find((m) => m.name === 'Dog');
+  if (body) {
+    const src = body.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+    const B = T.kneeDrop / 0.3, bent = new Float32Array(src.length);
+    for (let i = 0; i < src.length; i += 3) {
+      const y = src[i + 1];
+      bent[i] = src[i]; bent[i + 1] = y < B ? y * 0.7 : y - 0.3 * B; bent[i + 2] = src[i + 2];
+    }
+    kneeTarget = new BABYLON.MorphTarget('knees', 0, scene);
+    kneeTarget.setPositions(bent);
+    const mtm = new BABYLON.MorphTargetManager(scene);
+    mtm.addTarget(kneeTarget);
+    body.morphTargetManager = mtm;
+    accNode = new BABYLON.TransformNode('accessories', scene);
+    accNode.parent = root;
+    for (const m of dogMeshes) if (/eye|nose|collar|buckle|rivet/i.test(m.name)) m.setParent(accNode);
+  }
   const collar = dogMeshes.find((m) => /collar/i.test(m.name));
   if (collar) {
     const local = collar.getBoundingInfo().boundingBox.centerWorld.clone();
@@ -527,7 +549,8 @@ function updateHUD(force) {
 function resetRun() {
   for (const c of [...chunks.values()]) disposeChunk(c);
   Object.assign(state, { running: false, over: false, t: 0, x: 0, z: 4, heading: 0, speed: T.startSpeed, air: false, airTime: 0, spin: 0,
-    lives: T.lives, score: 0, dist: 0, bones: 0, gates: 0, tuck: false, inv: 0, shake: 0, landBounce: 0, crouch: 0, overTimer: 0 });
+    lives: T.lives, score: 0, dist: 0, bones: 0, gates: 0, tuck: false, inv: 0, shake: 0, landBounce: 0, crouch: 0, overTimer: 0,
+    lean: 0, leanVel: 0, kick: 0, kickSign: 0, prevTurn: 0, aLat: 0, skid: 0 });
   ensureChunks(state.z);
   state.y = terrainH(state.x, state.z); state.vy = 0;
   drawLives(); updateHUD(true);
@@ -589,17 +612,37 @@ function step(dt) {
   if (state.inv > 0) state.inv -= dt;
   const { turn, tuck } = readInput();
   state.tuck = tuck && !state.air;
+  // Skiing like a bike: the input asks for a LEAN, not a turn. Starting a turn first sways the body
+  // the other way (the counter-steer kick), then the body falls into the turn; a balanced carve on
+  // that edge turns at g·tan(lean)/v, so the skis follow the lean with a lag and a wider arc at speed.
+  if (turn !== 0 && (state.prevTurn === 0 || Math.sign(turn) !== Math.sign(state.prevTurn))) { state.kick = T.kickTime; state.kickSign = -Math.sign(turn); }
+  state.prevTurn = turn;
+  if (state.kick > 0) state.kick -= dt;
+  const v = Math.max(state.speed, 3);
   if (!state.air) {
-    if (turn) state.heading += turn * T.turnRate * dt / (1 + state.speed / 28);
-    else { const s = Math.sign(state.heading); state.heading -= s * Math.min(Math.abs(state.heading), T.straighten * dt); }
-    state.heading = clamp(state.heading, -T.maxHeading, T.maxHeading);
+    const leanMax = clamp(T.leanBase + T.leanPerSpeed * state.speed, T.leanBase, T.leanMax);
+    let target = turn * leanMax;
+    if (turn === 0) target = clamp(-state.heading * T.recentre, -0.6, 0.6);        // finishing the turn back to the fall line
+    if (state.kick > 0) target += state.kickSign * T.kickLean * (state.kick / T.kickTime);
+    state.leanVel += (T.leanSpring * (target - state.lean) - T.leanDamp * state.leanVel) * dt;
+    state.lean = clamp(state.lean + state.leanVel * dt, -1.1, 1.1);
+    let omega = T.g * Math.tan(state.lean) / v;                                        // the carve
+    const gripMax = T.g * T.grip;
+    state.skid = Math.max(0, Math.abs(omega * v) - gripMax) / T.g;                    // the edge lets go
+    if (Math.abs(omega * v) > gripMax) omega = Math.sign(omega) * gripMax / v;
+    state.aLat = omega * v;
+    const fallLine = T.g * Math.sin(SLOPE) * Math.sin(state.heading) / v;             // gravity bends the line downhill
+    state.heading = clamp(state.heading + (omega - fallLine) * dt, -T.maxHeading, T.maxHeading);
   } else {
+    state.leanVel += (T.leanSpring * 0.4 * (0 - state.lean) - T.leanDamp * state.leanVel) * dt;
+    state.lean += state.leanVel * dt;
+    state.aLat = 0; state.skid = 0;
     state.spin += turn * 7.2 * dt;
     state.airTime += dt;
   }
   const k = state.tuck ? T.dragTuck : T.drag;
   let a = T.g * Math.sin(SLOPE) * Math.cos(state.heading) - k * state.speed * state.speed;
-  if (!state.air) a -= T.carveDrag * Math.abs(Math.sin(state.heading)) * state.speed;
+  if (!state.air) a -= (T.carveDrag * 0.5 * (Math.abs(state.aLat) / T.g) + 0.8 * state.skid) * state.speed;   // edging and skidding cost speed
   state.speed = Math.max(T.minSpeed, state.speed + a * dt);
   const dx = state.speed * Math.sin(state.heading) * dt, dz = state.speed * Math.cos(state.heading) * dt;
   state.x += dx; state.z += dz; state.dist += dz;
@@ -674,6 +717,7 @@ function step(dt) {
 const camPos = new V3(0, 3, -7), camTarget = new V3(0, 0, 5);
 const fwd = new V3(), up = new V3(), right = new V3(), q = new BABYLON.Quaternion(), qRoll = new BABYLON.Quaternion();
 const rotMat = new BABYLON.Matrix();
+const ROLL_SIGN = -1;   // positive lean = right turn = body tilts toward +x
 function syncVisuals(dt) {
   terrainNormal(state.x, state.z, tmpN);
   const yawVis = state.heading + state.spin;
@@ -684,20 +728,26 @@ function syncVisuals(dt) {
   V3.CrossToRef(up, fwd, right); right.normalize();
   BABYLON.Matrix.FromXYZAxesToRef(right, up, fwd, rotMat);
   BABYLON.Quaternion.FromRotationMatrixToRef(rotMat, q);
-  const lean = -state.heading * 0.5 * Math.min(1, state.speed / 16) * (state.air ? 0.3 : 1) + Math.sin(state.t * 32) * 0.25 * state.shake;
-  BABYLON.Quaternion.RotationAxisToRef(fwd, lean, qRoll);
+  // incline into the turn about the ski line on the snow (plus the crash wobble)
+  const roll = ROLL_SIGN * state.lean + Math.sin(state.t * 32) * 0.25 * state.shake;
+  BABYLON.Quaternion.RotationAxisToRef(fwd, roll, qRoll);
   qRoll.multiplyToRef(q, dogRoot.rotationQuaternion);
   const bob = Math.sin(state.t * 12) * 0.006 * Math.min(1, state.speed / 10);
-  dogRoot.position.set(state.x, state.y + bob, state.z);
-  const targetCrouch = (state.tuck ? 0.16 : 0) + state.landBounce * 0.12;
-  state.crouch = lerp(state.crouch, targetCrouch, dt ? 1 - Math.exp(-dt * 12) : 1);
-  dogPivot.scaling.set(1 + state.crouch * 0.35, 1 - state.crouch, 1 + state.crouch * 0.15);
+  dogRoot.position.set(state.x, state.y + bob - 0.085 * Math.abs(Math.sin(state.lean)) * 0.5, state.z);   // keep the edged skis in the snow
+  // knees: bend under edge force, in a tuck and on landing; extend for the up-unweighting kick
+  const edge = Math.min(1, Math.abs(state.aLat) / T.g);
+  const targetCrouch = state.air ? 0.35 : clamp(0.12 + 0.55 * edge + (state.tuck ? 0.6 : 0) + state.landBounce * 0.7 - (state.kick > 0 ? 0.3 : 0), 0, 1);
+  state.crouch = lerp(state.crouch, targetCrouch, dt ? 1 - Math.exp(-dt * 10) : 1);
+  if (kneeTarget) kneeTarget.influence = state.crouch;
+  if (accNode) accNode.position.y = -T.kneeDrop * state.crouch;
+  dogPivot.scaling.set(1 + state.crouch * 0.04, 1, 1 + state.crouch * 0.03);
   updateScarf(state.t, state.speed, state.air);
-  const carve = Math.abs(Math.sin(state.heading)) * state.speed;
-  spray.emitRate = state.air || !state.running ? 0 : clamp((carve - 2.5) * 55, 0, 450);
-  const outer = skiTails[state.heading > 0 ? 0 : 1];
+  // spray off the outside (weighted) ski, in proportion to edge force and skid
+  spray.emitRate = state.air || !state.running ? 0 : clamp((edge * 0.9 + state.skid * 2.5) * state.speed * 28, 0, 650);
+  const outer = skiTails[state.lean > 0 ? 0 : 1];
   if (outer) { outer.computeWorldMatrix(true); sprayEmitter.position.copyFrom(outer.getAbsolutePosition()); }
-  spray.direction1.set(-Math.sign(state.heading) * 2 - 1, 1.5, -2); spray.direction2.set(-Math.sign(state.heading) * 4 + 1, 4, -4);
+  const out = -Math.sign(state.lean || 1);
+  spray.direction1.set(out * 2 - 1, 1.2, -2); spray.direction2.set(out * 4 + 1, 3.5, -4);
   const back = 4.6 + Math.min(1.8, state.speed * 0.05), height = 2.2 + Math.min(0.9, state.speed * 0.025);
   const cy = state.heading * 0.35;
   const wantPos = new V3(state.x - Math.sin(cy) * back, terrainH(state.x - Math.sin(cy) * back, state.z - Math.cos(cy) * back) + height, state.z - Math.cos(cy) * back);
@@ -708,6 +758,7 @@ function syncVisuals(dt) {
   const sh = state.shake * 0.25;
   camera.position.set(camPos.x + (Math.random() - 0.5) * sh, camPos.y + (Math.random() - 0.5) * sh, camPos.z);
   camera.setTarget(camTarget);
+  camera.rotation.z = lerp(camera.rotation.z, ROLL_SIGN * state.lean * 0.16, dt ? 1 - Math.exp(-dt * 4) : 1);   // the camera leans a little with the dog
   snowEmitter.position.set(camPos.x, camPos.y, camPos.z);
   peaks.position.set(camPos.x, camPos.y - 60, camPos.z);
   sun.position.set(state.x - sun.direction.x * 90, state.y - sun.direction.y * 90, state.z - sun.direction.z * 90);
