@@ -7,7 +7,8 @@ skis down a snowy mountain?" — the dog is the black-and-tan kelpie photo that 
 **Fantasy:** our dog on red skis, flying down a mountain that never ends.
 
 **Player verbs:** lean into a carve (left/right) · tuck for speed · jump · spin in the air ·
-thread a gate · grab a bone.
+thread a gate · follow the bones — each gate has a trail of bones curving in from the previous
+gate and ending at its centre, so the bones *are* the course line (and the trees keep clear of it).
 
 **Enemy verbs:** the mountain does the work — pines close in as you go (a wide corridor at the
 top narrows chunk by chunk), rocks appear, kickers launch you whether you asked or not; the
@@ -47,7 +48,8 @@ flight at 70. Steer in the air and the dog spins.
 
 **Knobs (src/ski.js `T`):** `slopeDeg`, `drag` / `dragTuck` (terminal speed), `carveDrag`,
 `leanBase`/`leanPerSpeed`/`leanMax`, `leanSpring`/`leanDamp`, `kickTime`/`kickLean`, `grip`, `skidSteer`,
-`recentre`, `jumpV`, `lives`, `kneeDrop`; the ramp (`corridor`, `nTrees`, rock count) in `makeChunk`.
+`recentre`, `jumpV`, `lives`, `kneeDrop`; the ramp (`corridor`, `nTrees`, rock count) in `makeChunk`;
+the course in `gatesFor` (gate reach 0.45·Δz, ≤ 18 m; trail of ≤ 9 bones 3 m apart).
 
 **Verified by:** `tests/games.spec.js` "Kelpie Downhill" — slope, terminal speed, carving,
 straightening, jump + landing, spin scoring, gate scoring, tree hit costs one life, finite
@@ -72,3 +74,6 @@ state, chunk streaming, no console errors.
 - 2026-09-05 · "turning too slow, the dog is rigid like a frozen cube, start easier" — skid-steer pivot on
   top of the carve and a stiffer lean spring; a real skeleton (IK legs, angulation, head look, tail,
   ears); open piste that narrows over the first 660 m
+- 2026-09-05 · "the bones should lead to the gates, they're off course" — gates chained within reach of
+  each other; bones laid as a smooth trail from the previous gate into each gate, spilling across
+  chunk boundaries; trees and rocks keep 3.2 m off the trail

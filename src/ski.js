@@ -263,6 +263,24 @@ puff.blendMode = BABYLON.ParticleSystem.BLENDMODE_STANDARD;
 if (!SIM) { snowfall.start(); spray.start(); puff.start(); }
 
 // ------------------------------------------------------------------ chunks
+const courseCache = new Map();
+// the gates of chunk i (none in chunk 0): deterministic, each placed within reach of the previous gate
+// so the course stays skiable; `prev` is the waypoint the bone trail leads in from
+function gatesFor(i) {
+  if (i <= 0) return [];
+  if (courseCache.has(i)) return courseCache.get(i);
+  const rng = mulberry32(0x51ED270B ^ (i * 104729 + 3));
+  const z0 = i * L, nG = rng() < 0.5 ? 2 : 1, out = [];
+  let prev = gatesFor(i - 1).at(-1) || { x: 0, z: L - 30 };          // the run starts at x = 0
+  for (let k = 0; k < nG; k++) {
+    const z = z0 + 8 + (k + 0.2 + rng() * 0.6) * (L / nG);
+    const reach = Math.min(18, 0.45 * (z - prev.z));
+    const g = { x: clamp(prev.x * 0.8 + (rng() * 2 - 1) * reach, -17, 17), z, red: (i + k) % 2 === 0, prev: { x: prev.x, z: prev.z } };
+    out.push(g); prev = g;
+  }
+  courseCache.set(i, out);
+  return out;
+}
 const zeroMat = BABYLON.Matrix.Zero();
 function makeChunk(i) {
   const rng = mulberry32(0x9E3779B1 ^ (i * 7919 + 17));
@@ -273,12 +291,17 @@ function makeChunk(i) {
     const n = rng() < 0.4 ? 2 : 1;
     for (let k = 0; k < n; k++) c.ramps.push({ x: rr(-20, 20), z: z0 + 14 + (k + rng()) * ((L - 28) / n), rx: 2.8, rz: 4.6, h: rr(1.3, 1.8) });
   }
-  const nG = i === 0 ? 0 : (rng() < 0.5 ? 2 : 1);
-  for (let k = 0; k < nG; k++) c.gates.push({ x: rr(-17, 17), z: z0 + 8 + (k + 0.2 + rng() * 0.6) * (L / nG), red: (i + k) % 2 === 0, done: false });
-  const nArcs = i === 0 ? 2 : 2 + (rng() < 0.5 ? 1 : 0);
-  for (let a = 0; a < nArcs; a++) {
-    const n = 3 + Math.floor(rng() * 3), bx = rr(-16, 16), bz = z0 + rr(6, L - 8), bend = rr(-1.2, 1.2);
-    for (let k = 0; k < n; k++) c.bones.push({ x: bx + bend * k, z: bz + k * 2.4, taken: false, idx: c.bones.length });
+  // the course: gates chained chunk to chunk, and a trail of bones that curves in from the previous
+  // gate and ends at each gate's centre (the trail of the next chunk's first gate spills into this one)
+  for (const g of gatesFor(i)) c.gates.push({ x: g.x, z: g.z, red: g.red, done: false });
+  const smooth = (u) => u * u * (3 - 2 * u);
+  for (const g of [...gatesFor(i), ...gatesFor(i + 1).slice(0, 1)]) {
+    const dz = g.z - g.prev.z, n = Math.min(9, Math.floor((dz - 8) / 3));
+    for (let k = 0; k < n; k++) {
+      const z = g.z - 2.5 - k * 3;
+      if (z < z0 || z >= z0 + L) continue;
+      c.bones.push({ x: lerp(g.prev.x, g.x, smooth((z - g.prev.z) / dz)), z, taken: false, idx: c.bones.length });
+    }
   }
   const far = (x, z, list, d) => list.every((o) => (o.x - x) * (o.x - x) + (o.z - z) * (o.z - z) > d * d);
   // difficulty ramp: an open piste for the first chunks, then the forest closes in over ~600 m
@@ -291,7 +314,7 @@ function makeChunk(i) {
     const localCorridor = i === 0 ? lerp(40, corridor, clamp((z - z0 - 6) / (L - 6), 0, 1)) : corridor;
     if (Math.abs(x) < localCorridor) continue;
     if (Math.abs(x) < 6 && ramp < 0.8 && rng() < 0.7) continue;
-    if (!far(x, z, c.gates, 4.5) || !far(x, z, c.bones, 2.6) || !far(x, z, c.ramps, 7) || !far(x, z, c.trees, 2.4)) continue;
+    if (!far(x, z, c.gates, 4.5) || !far(x, z, c.bones, 3.2) || !far(x, z, c.ramps, 7) || !far(x, z, c.trees, 2.4)) continue;
     c.trees.push({ x, z, s: rr(0.55, 0.95), rot: rng() * Math.PI * 2 });
   }
   for (let k = 0; k < 34; k++) {
@@ -303,7 +326,7 @@ function makeChunk(i) {
   while (c.rocks.length < nRocks && tries++ < 200) {
     const x = rr(-T.halfWidth, T.halfWidth), z = z0 + rr(0, L);
     if (Math.abs(x) < corridor * 0.6) continue;
-    if (!far(x, z, c.gates, 4.5) || !far(x, z, c.bones, 2.6) || !far(x, z, c.ramps, 7) || !far(x, z, c.trees, 2.2) || !far(x, z, c.rocks, 4)) continue;
+    if (!far(x, z, c.gates, 4.5) || !far(x, z, c.bones, 3.2) || !far(x, z, c.ramps, 7) || !far(x, z, c.trees, 2.2) || !far(x, z, c.rocks, 4)) continue;
     c.rocks.push({ x, z, s: rr(0.6, 1.4), rot: rng() * Math.PI * 2 });
   }
   chunks.set(i, c);
