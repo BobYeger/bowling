@@ -1,8 +1,9 @@
 # 🎿 Kelpie Downhill — כלב גולש
 
-**Drawing:** asked for in chat, not drawn. "Could you make a Babylon.js game in which this dog
-skis down a snowy mountain?" — the dog is the black-and-tan kelpie photo that was rebuilt as a
-3D model (Blender, procedural; `src/assets/dog.glb` is its game export). Made 2026-09-04.
+**Drawing:** `drawings/ski-dog-reference.png` — the dog itself. Asked for in chat, not drawn:
+"Could you make a Babylon.js game in which this dog skis down a snowy mountain?" — the dog is the
+black-and-tan kelpie photo that was rebuilt as a 3D model (Blender, procedural; `src/assets/dog.glb`
+is its game export). Made 2026-09-04.
 
 **Fantasy:** our dog on red skis, flying down a mountain that never ends.
 
