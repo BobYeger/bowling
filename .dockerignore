@@ -5,3 +5,6 @@ dist
 README.md
 Dockerfile
 .dockerignore
+test-results
+playwright-report
+artifacts

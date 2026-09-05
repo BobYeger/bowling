@@ -13,10 +13,10 @@
 	@hashed path /assets/*
 	header @hashed Cache-Control "public, max-age=31536000, immutable"
 
-	# Caddy path matchers are exact, so every HTML entry point must be listed.
+	# Revalidate every HTML entry point, including games added to the roster.
 	# Without this directive browsers may heuristically cache an old document
 	# that points at a deleted, content-hashed bundle.
-	@entry path / /index.html /bowling.html /pendel.html
+	@entry path / /*.html
 	header @entry Cache-Control "no-cache"
 
 	# Deliberately no `try_files {path} /index.html`. This app has no client-side

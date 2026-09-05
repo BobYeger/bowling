@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>דינו במבוך!</title>
+  <style>
+    .arrow {
+      display: none;
+      font-size: 34px;
+      background: rgba(248, 245, 236, .9);
+      border: 3px solid var(--hot-dark);
+      border-radius: 50%;
+      padding: 4px 8px 8px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 5;
+    }
+    .arrow.exit { border-color: var(--accent); }
+    .arrow.charging { animation: pulse .35s steps(2) infinite; }
+    @keyframes pulse { 50% { background: #ff5c40; box-shadow: 0 0 22px #ff5c40; } }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <div id="timer" class="hud badge tr hot">⏱️ 150</div>
+  <div id="score" class="hud badge tl">🍖 0/15</div>
+  <div id="msg" class="hud msg"></div>
+  <div id="arrows"></div>
+
+  <div id="intro" class="overlay">
+    <h1>🦖 דינו במבוך! 🐉</h1>
+    <p>אתם הדינוזאור הגדול, במבוך שאין לו סוף!</p>
+    <p class="tip">🍖 אוכלים <b>15 דינוזאורים קטנים</b> — ואז נפתחת היציאה 🚪. רוצו אליה!</p>
+    <p class="tip">⚡ אוכלים אחד אחרי השני = <b>שרשרת</b> — רצים מהר יותר ומקבלים יותר נקודות!</p>
+    <p class="tip">🐉 דרקון יורק אש רודף אחריכם — אם האש פוגעת, זה הסוף! <b>רווח</b> יורה בו: 3 פגיעות והוא בורח (אבל חוזר יותר מהיר…)</p>
+    <p class="tip">🏃 זזים עם <b>החצים</b> או WASD · החצים 🐉 🚪 בקצה המסך מראים לאן</p>
+    <p class="tip">⏱️ יש 150 שניות — ואז הדרקונים מתעצבנים!</p>
+    <button id="startBtn">שחקו!</button>
+    <p class="tip other-game"></p>
+  </div>
+
+  <div id="gameover" class="overlay hidden">
+    <h1 id="goTitle">🔥 הדרקון שרף אתכם!</h1>
+    <p class="big-score" id="finalScore"></p>
+    <p id="finalDetail"></p>
+    <p id="bestScore"></p>
+    <button id="restartBtn">עוד פעם!</button>
+    <p class="tip other-game"></p>
+  </div>
+
+  <script type="module" src="/src/dino.js"></script>
+</body>
+</html>
