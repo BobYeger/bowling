@@ -19,8 +19,7 @@ const lobbyPlugin = () => ({
     handler(html, ctx) {
       if (ctx.filename === resolve(__dirname, 'index.html')) {
         const current = JSON.parse(readFileSync(resolve(__dirname, 'games.json'), 'utf8'));
-        return html.replace('<!-- GAME_COUNT -->', String(current.games.length))
-          .replace('<!-- GAME_ROSTER -->', renderRoster(current.games));
+        return html.replace('<!-- GAME_ROSTER -->', renderRoster(current.games));
       }
       if (process.env.ARTIFACT === '1') return html;
       return html.replace('<body>', '<body>\n  <a class="game-home" href="/">← כל המשחקים</a>');

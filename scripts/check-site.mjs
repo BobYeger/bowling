@@ -8,7 +8,7 @@ const root = resolve(import.meta.dirname, '..');
 const { games } = JSON.parse(readFileSync(resolve(root, 'games.json'), 'utf8'));
 const output = resolve(root, 'dist');
 const lobby = readFileSync(resolve(output, 'index.html'), 'utf8');
-assert.equal((lobby.match(/class="game-card(?: featured)?"/g) || []).length, games.length);
+assert.equal((lobby.match(/class="game-card"/g) || []).length, games.length);
 assert.ok(!lobby.includes('<!-- GAME_'), 'Unrendered roster placeholder');
 assert.ok(!lobby.includes('<script'), 'The lobby should not load a game engine');
 assert.equal(new Set(games.map((g) => g.page)).size, games.length, 'Duplicate game entry');
