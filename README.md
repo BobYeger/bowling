@@ -1,4 +1,6 @@
-# 🎳⚽🦖🥊🎿 משחקי הטוש (The Marker Games)
+# 🎳⚽🦖🥊🎿 המשחקייה של ב׳3 (The Marker Games)
+
+The game roster is at `/` (index.html), with original artwork and links to every game.
 
 Five games designed by kids, drawn with markers, and brought to life. Every
 game is a page of the same little kit: cel-shaded "marker on paper" rendering, one
@@ -6,11 +8,11 @@ keyboard or a touch pad, one or two players, and a headless test that drives it.
 
 | Game | Page | The kid's rule |
 |---|---|---|
-| 🎳 **כדור באולינג בורח** (Bowling Escape) | `/` | The world only moves when the ball moves. Every strike is worth ten, and the crowd of monsters keeps growing the longer you roll. |
+| 🎳 **כדור באולינג בורח** (Bowling Escape) | `/bowling.html` | The world only moves when the ball moves. Every strike is worth ten, and the crowd of monsters keeps growing the longer you roll. |
 | ⚽ **פנדלים בנגיחה** (Header Penalties) | `/pendel.html` | Read the keeper's lean, head the lob into the corner he isn't. Five kicks a round; two players can take turns as keeper. |
 | 🦖 **דינו במבוך** (Dino Maze) | `/dino.html` | Eat fifteen little dinos in an endless maze, dodge the dragon's flame, find the exit before the dragons get angry. |
-| 🥊 **משחק אגרופים** (Punch Game) | `/punch.html` | Stretch-punch the whole forest, dash out of trouble, survive wave after wave. A second cat can join. |
-| 🎿 **כלב גולש** (Kelpie Downhill) | `/ski.html` | Our real dog, as a 3D model, skis an endless slope: thread the gates, grab the bones, launch off kickers and spin. Three bones, no lift ticket. |
+| 🥊 **חתול ביער** (Punch Game) | `/punch.html` | Stretch-punch the whole forest, dash out of trouble, survive wave after wave. A second cat can join. |
+| 🎿 **רוקרוק בשלג** (Kelpie Downhill) | `/ski.html` | Our real dog, as a 3D model, skis an endless slope: thread the gates, grab the bones, launch off kickers and spin. Three bones, no lift ticket. |
 
 The drawings the games were built from are in [`drawings/`](drawings/README.md); the
 one-page design sheets ("verb sheets") are in [`design/`](design/README.md).
@@ -26,6 +28,10 @@ npm run dev
 as a single self-contained HTML fragment in `artifacts/`, ready to publish (cross-links
 then point at the published artifact URLs in `games.json`). `npm test` runs the headless
 balance checks in Chrome.
+
+`npm run test:site` checks the production roster, every game entry point, return
+links and asset references after a build. The roster content lives in each game's
+`lobby` field in `games.json` and is rendered to static HTML by Vite.
 
 ## Controls
 

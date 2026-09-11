@@ -78,7 +78,7 @@ test.describe('Header Penalties', () => {
 
 test.describe('Bowling Escape', () => {
   test('a dodging ball rolls, strikes and stays finite; the crowd grows with rolling and strikes; no ending but a catch', async ({ page }) => {
-    await load(page, '/', '__game');
+    await load(page, '/bowling.html', '__game');
     const r = await page.evaluate(() => {
       const G = window.__game; const dt = 1 / 60;
       const key = (code, down) => window.dispatchEvent(new KeyboardEvent(down ? 'keydown' : 'keyup', { code, bubbles: true }));

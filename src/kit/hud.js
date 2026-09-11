@@ -56,6 +56,7 @@ export function createHud(app, { gameId, music: musicOpts = null } = {}) {
       });
       window.addEventListener('keydown', (e) => {
         if (e.code !== 'Enter' && e.code !== 'Space') return;
+        if (e.target instanceof Element && e.target.closest('a')) return;
         const open = document.querySelector('.overlay:not(.hidden)');
         if (!open) return;
         e.preventDefault();

@@ -1,4 +1,4 @@
-// 🎿 כלב גולש — Kelpie Downhill. Design sheet: design/ski.md (asked for in chat, no drawing).
+// 🎿 רוקרוק בשלג — Kelpie Downhill. Design sheet: design/ski.md (asked for in chat, no drawing).
 //
 // The black-and-tan kelpie (a real photo turned into a 3D model, see design/ski.md) skis an
 // endless 14° snow slope: carve through slalom gates, collect bones, launch off kickers and
